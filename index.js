@@ -1,26 +1,24 @@
-//importing express
-const express =require("express");
-const dotenv=require("dotenv");
+const express = require("express");
+const mongoose = require("mongoose");
+const userRoutes = require("./routes/userRoutes");
 
-const connectDB=require("../Backend/database/db")
-const userRoutes = require("../Backend/route/userRoute")
+const app = express();
 
-//instance of express applications
-const app=express();
-dotenv.config();
-app.use(express.json())
+app.use(express.json()); // parse JSON bodies
 
+// Connect to MongoDB
+mongoose.connect("mongodb://localhost:27017/mydbb", {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log("MongoDB connected"))
+.catch((err) => {
+  console.error("MongoDB connection error:", err);
+  process.exit(1); // stop the server if DB not connected
+});
 
-//Define the port and listen to the app.
-const PORT=8080;
-app.listen(8080, () => 
-    console.log(`Server running on ${PORT}`)
-);
-app.get('/',(req,res)=>
-    res.send('Server running on the file')
+// Routes
+app.use("/api/auth", userRoutes);
 
-)
-
-
-app.use("/api/user/", userRoutes)
-connectDB();
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
