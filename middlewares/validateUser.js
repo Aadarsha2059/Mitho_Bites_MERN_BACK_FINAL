@@ -1,8 +1,8 @@
 const validateUser = (req, res, next) => {
-  const { username, password, confirmPassword, phone, address } = req.body;
+  const { username, password, confirmpassword, phone, address } = req.body;
 
   // Check required fields
-  if (!username || !password || !confirmPassword || !phone || !address) {
+  if (!username || !password || !confirmpassword || !phone || !address) {
     return res.status(400).json({ 
       success: false, 
       message: "All fields (username, password, confirmPassword, phone, address) are required." 
@@ -26,7 +26,7 @@ const validateUser = (req, res, next) => {
   }
 
   // Confirm password check
-  if (password !== confirmPassword) {
+  if (password !== confirmpassword) {
     return res.status(400).json({ 
       success: false, 
       message: "Password and Confirm Password do not match." 
