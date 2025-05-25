@@ -84,3 +84,56 @@ exports.updateUser = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+
+
+
+
+exports.loginUser=async(req, res) =>{
+    const {username,password}=req.body
+    //validation
+    if(!username || !password){
+        return res.status(400).json(
+            {"success":false,"message":"Missing field"}
+        )
+    }
+    try{
+        const getUsers =await User.findOne(
+            {username:username}
+        )
+        if(!getUsers){
+            return res.status(403).json(
+                {"success":false,"message":"User not found"}
+            )
+        }
+        const passwordCHeck= await bcrypt.compare(password,getUsers.password) //pass,hash password
+        if(!passwordCHeck){
+            return res.status(403).json(
+                {"success":false,"message":"Invalid credentials"}
+            )
+        }
+
+
+        //
+        const payload={
+            "_id":getUsers._id,
+           
+            "username":getUsers.username
+        }
+        const token=jwt.sign(payload, process.env.SECRET,
+            {expiresIn:"7d"}
+        )
+        return res.status(200).json(
+            {
+                "success":true,
+                "message":"Login successful",
+                "data":getUsers,
+                "token":token // return toke in login...
+            }
+        )
+    }catch (err){
+        return res.status(500).json(
+            {"success":false,"message":"Server error"}
+        )
+    }
+}
