@@ -1,15 +1,23 @@
 const validateUser = (req, res, next) => {
-  const { username, password, confirmpassword, phone, address } = req.body;
+  const { fullname, username, password, confirmpassword, phone, address } = req.body;
 
   // Check required fields
-  if (!username || !password || !confirmpassword || !phone || !address) {
+  if (!fullname || !username || !password || !confirmpassword || !phone || !address) {
     return res.status(400).json({ 
       success: false, 
-      message: "All fields (username, password, confirmPassword, phone, address) are required." 
+      message: "All fields (fullname, username, password, confirmPassword, phone, address) are required." 
     });
   }
 
-  // Validate username (example: min 3 chars)
+  // Validate fullname (example: min 3 characters)
+  if (typeof fullname !== "string" || fullname.trim().length < 3) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "Full name must be at least 3 characters long." 
+    });
+  }
+
+  // Validate username (example: min 3 characters)
   if (typeof username !== "string" || username.trim().length < 3) {
     return res.status(400).json({ 
       success: false, 
@@ -17,7 +25,7 @@ const validateUser = (req, res, next) => {
     });
   }
 
-  // Validate password length (example: min 6 chars)
+  // Validate password length (example: min 6 characters)
   if (password.length < 6) {
     return res.status(400).json({ 
       success: false, 
@@ -33,7 +41,7 @@ const validateUser = (req, res, next) => {
     });
   }
 
-  // Validate phone number (basic example: must be digits and length 10)
+  // Validate phone number (must be 10 digits)
   const phoneRegex = /^\d{10}$/;
   if (!phoneRegex.test(phone)) {
     return res.status(400).json({ 

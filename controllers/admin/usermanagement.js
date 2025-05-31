@@ -3,10 +3,10 @@ const bcrypt = require("bcrypt");
 
 // Create User
 exports.createUser = async (req, res) => {
-    const { username, password, confirmpassword, phone, address } = req.body;
+    const { fullname, username, password, confirmpassword, phone, address } = req.body;
 
     // Validation
-    if (!username || !password || !confirmpassword) {
+    if (!fullname || !username || !password || !confirmpassword) {
         return res.status(400).json({
             success: false,
             message: "Missing required fields",
@@ -35,6 +35,7 @@ exports.createUser = async (req, res) => {
 
         // Create new user
         const newUser = new User({
+            fullname,
             username,
             password: hashedPassword,
             phone,
@@ -46,11 +47,13 @@ exports.createUser = async (req, res) => {
         return res.status(201).json({
             success: true,
             message: "User registered successfully",
+            data: newUser,
         });
     } catch (err) {
         return res.status(500).json({
             success: false,
             message: "Server error",
+            error: err.message,
         });
     }
 };
@@ -68,6 +71,7 @@ exports.getUsers = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Server error",
+            error: err.message,
         });
     }
 };
@@ -94,6 +98,7 @@ exports.getOneUser = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Server error",
+            error: err.message,
         });
     }
 };
@@ -101,9 +106,9 @@ exports.getOneUser = async (req, res) => {
 // Update One User
 exports.updateOne = async (req, res) => {
     const { id } = req.params;
-    const { username, password, confirmpassword, phone, address } = req.body;
+    const { fullname, username, password, confirmpassword, phone, address } = req.body;
 
-    // Validation
+    // Validate password confirmation
     if (password && password !== confirmpassword) {
         return res.status(400).json({
             success: false,
@@ -113,6 +118,7 @@ exports.updateOne = async (req, res) => {
 
     try {
         const updateData = {
+            fullname,
             username,
             phone,
             address,
@@ -142,6 +148,7 @@ exports.updateOne = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Server error",
+            error: err.message,
         });
     }
 };
@@ -167,6 +174,7 @@ exports.deleteOne = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Server error",
+            error: err.message,
         });
     }
 };
