@@ -1,16 +1,17 @@
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 // Register User
 exports.registerUser = async (req, res) => {
-  const { username, password, confirmpassword, phone, address } = req.body;
+  const { fullname, username, password, confirmpassword, phone, address } = req.body;
 
-  // Basic validation
-  if (!username || !password || !confirmpassword) {
-    return res.status(400).json({ success: false, message: "Missing required fields" });
+  // Only username and password are required
+  if (!username || !password) {
+    return res.status(400).json({ success: false, message: "Username and password are required" });
   }
 
-  if (password !== confirmpassword) {
+  if (confirmpassword && password !== confirmpassword) {
     return res.status(400).json({ success: false, message: "Passwords do not match" });
   }
 
@@ -26,10 +27,12 @@ exports.registerUser = async (req, res) => {
 
     // Create new user
     const newUser = new User({
+      fullname,
       username,
       password: hashedPassword,
       phone,
       address,
+      confirmpassword, // storing confirm password only if needed, though usually it's better not to
     });
 
     await newUser.save();
@@ -40,28 +43,45 @@ exports.registerUser = async (req, res) => {
   }
 };
 
-// Login User
+// Login User (simple version)
 exports.loginUser = async (req, res) => {
   const { username, password } = req.body;
 
+  // Validation
+  if (!username || !password) {
+    return res.status(400).json({ success: false, message: "Missing field" });
+  }
+
   try {
-    const user = await User.findOne({ username });
-    if (!user) {
-      return res.status(400).json({ success: false, message: "Invalid username or password" });
+    const getUsers = await User.findOne({ username: username });
+    if (!getUsers) {
+      return res.status(403).json({ success: false, message: "User not found" });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ success: false, message: "Invalid username or password" });
+    const passwordCHeck = await bcrypt.compare(password, getUsers.password);
+    if (!passwordCHeck) {
+      return res.status(403).json({ success: false, message: "Invalid credentials" });
     }
 
-    return res.json({ success: true, message: "Login successful" });
-  } catch (error) {
+    const payload = {
+      _id: getUsers._id,
+      username: getUsers.username,
+    };
+
+    const token = jwt.sign(payload, process.env.SECRET, { expiresIn: "7d" });
+
+    return res.status(200).json({
+      success: true,
+      message: "Login successful",
+      data: getUsers,
+      token: token,
+    });
+  } catch (err) {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
-// Update User
+// Update User (no change needed unless you want to add fullname later)
 exports.updateUser = async (req, res) => {
   const { id } = req.params;
   const { username, password, phone, address } = req.body;
@@ -84,56 +104,3 @@ exports.updateUser = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
-
-
-
-
-exports.loginUser=async(req, res) =>{
-    const {username,password}=req.body
-    //validation
-    if(!username || !password){
-        return res.status(400).json(
-            {"success":false,"message":"Missing field"}
-        )
-    }
-    try{
-        const getUsers =await User.findOne(
-            {username:username}
-        )
-        if(!getUsers){
-            return res.status(403).json(
-                {"success":false,"message":"User not found"}
-            )
-        }
-        const passwordCHeck= await bcrypt.compare(password,getUsers.password) //pass,hash password
-        if(!passwordCHeck){
-            return res.status(403).json(
-                {"success":false,"message":"Invalid credentials"}
-            )
-        }
-
-
-        //
-        const payload={
-            "_id":getUsers._id,
-           
-            "username":getUsers.username
-        }
-        const token=jwt.sign(payload, process.env.SECRET,
-            {expiresIn:"7d"}
-        )
-        return res.status(200).json(
-            {
-                "success":true,
-                "message":"Login successful",
-                "data":getUsers,
-                "token":token // return toke in login...
-            }
-        )
-    }catch (err){
-        return res.status(500).json(
-            {"success":false,"message":"Server error"}
-        )
-    }
-}
