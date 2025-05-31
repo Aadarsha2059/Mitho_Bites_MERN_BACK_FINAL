@@ -5,7 +5,7 @@ const connectDB=require("./config/db")
 const userRoutes=require("./routes/userRoutes")
 const adminUserRoutes=require("./routes/admin/userRouteAdmin")
 
-
+const productRouteAdmin=require("./routes/admin/productRouteAdmin")
 
 
 const adminCategoryRoutes = require("./routes/admin/foodcategoryRouteAdmin")
@@ -20,11 +20,8 @@ app.use("/uploads",express.static(path.join(__dirname,"uploads")))
 //2 new implementations
 connectDB()
 app.use("/api/auth",userRoutes)
-
 app.use("/api/admin/users",adminUserRoutes)
-
-
-
+app.use("/api/admin/product", productRouteAdmin)
 app.use("/api/admin/category", adminCategoryRoutes)
 
 
