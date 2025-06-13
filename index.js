@@ -6,6 +6,8 @@ const userRoutes=require("./routes/userRoutes")
 const adminUserRoutes=require("./routes/admin/userRouteAdmin")
 
 const productRouteAdmin=require("./routes/admin/productRouteAdmin")
+const restaurantRouteAdmin=require("./routes/admin/restaurantRouteAdmin")
+const orderRouteAdmin=require("./routes/admin/orderRouteAdmin")
 
 
 const adminCategoryRoutes = require("./routes/admin/foodcategoryRouteAdmin")
@@ -24,6 +26,8 @@ app.use("/api/auth",userRoutes)
 app.use("/api/admin/users",adminUserRoutes)
 app.use("/api/admin/product", productRouteAdmin)
 app.use("/api/admin/category", adminCategoryRoutes)
+app.use("/api/admin/restaurant", restaurantRouteAdmin)
+app.use("/api/admin/order", orderRouteAdmin)
 
 
 
