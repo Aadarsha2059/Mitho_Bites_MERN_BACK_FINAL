@@ -32,7 +32,7 @@ exports.registerUser = async (req, res) => {
       password: hashedPassword,
       phone,
       address,
-      confirmpassword, // storing confirm password only if needed, though usually it's better not to
+      confirmpassword, 
     });
 
     await newUser.save();

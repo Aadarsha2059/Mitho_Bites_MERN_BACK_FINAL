@@ -58,14 +58,28 @@ exports.createUser = async (req, res) => {
     }
 };
 
-// Get All Users
+// Get All Users with Pagination
 exports.getUsers = async (req, res) => {
     try {
-        const users = await User.find();
+        const { page = 1, limit = 10 } = req.query;
+        const skip = (page - 1) * limit;
+
+        const users = await User.find()
+            .skip(skip)
+            .limit(Number(limit));
+
+        const total = await User.countDocuments();
+
         return res.status(200).json({
             success: true,
             message: "All users fetched successfully",
             data: users,
+            pagination: {
+                total,
+                page: Number(page),
+                limit: Number(limit),
+                totalPages: Math.ceil(total / limit),
+            },
         });
     } catch (err) {
         return res.status(500).json({
