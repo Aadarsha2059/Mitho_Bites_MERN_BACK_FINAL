@@ -14,7 +14,9 @@ const { authenticateUser, isAdmin } = require("../../middlewares/authorizedUser"
 router.post("/", createUser);
 
 // Get all users (protected route, admin only)
-router.get("/", authenticateUser, isAdmin, getUsers);
+router.get("/", authenticateUser,
+  //  isAdmin,
+    getUsers);
 
 // Get a single user by ID
 router.get("/:id", getOneUser);

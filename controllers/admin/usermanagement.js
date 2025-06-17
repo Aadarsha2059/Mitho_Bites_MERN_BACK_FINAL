@@ -6,17 +6,10 @@ exports.createUser = async (req, res) => {
     const { fullname, username, password, confirmpassword, phone, address } = req.body;
 
     // Validation
-    if (!fullname || !username || !password || !confirmpassword) {
+    if (!fullname || !username || !password || !phone) {
         return res.status(400).json({
             success: false,
             message: "Missing required fields",
-        });
-    }
-
-    if (password !== confirmpassword) {
-        return res.status(400).json({
-            success: false,
-            message: "Passwords do not match",
         });
     }
 

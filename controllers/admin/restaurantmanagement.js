@@ -1,8 +1,8 @@
 const Restaurant = require("../../models/Restaurant");
 
 exports.createRestaurant = async (req, res) => {
-    const { name, location, contact } = req.body;
-
+    const { name, location, contact, } = req.body;
+    const filename = req.file?.path
     if (!name || !location || !contact) {
         return res.status(403).json({
             success: false,
@@ -17,7 +17,7 @@ exports.createRestaurant = async (req, res) => {
             name,
             location,
             contact,
-            filepath, 
+            filepath: filename,
         });
 
         await restaurant.save();
