@@ -40,6 +40,13 @@ exports.getCategoryById = async (req, res) => {
 // Update a category
 exports.updateCategory = async (req, res) => {
     try {
+        const filename=req.file?.path
+        const data={
+            name:req.body.name
+        }
+        if(filename){
+            data.filepath=filename
+        }
         const category = await Category.findByIdAndUpdate(
             req.params.id,
             { name: req.body.name },
