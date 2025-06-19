@@ -234,13 +234,7 @@ app.delete(
     }
 )
 
-const PORT=process.env.PORT
-app.listen(
-    5050,  // port -> local host:5050
-    ()=>{
-        console.log("Server started..")
-    }
-)
+module.exports=app
 
 
 
