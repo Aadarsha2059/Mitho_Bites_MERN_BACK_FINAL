@@ -13,4 +13,7 @@ router.post("/login", loginUser);
 // Assuming you use :id to identify which user to update
 router.put("/update/:id", validateUser, updateUser);
 
+// router.post("/request-reset",sendResentLink)
+// router.post("/reset-password/:token",resetPassword)
+
 module.exports = router;
