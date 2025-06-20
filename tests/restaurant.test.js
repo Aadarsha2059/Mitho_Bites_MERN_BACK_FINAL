@@ -55,7 +55,7 @@ describe("Restaurant API", () => {
       .field("name", "Test Restaurant File")
       .field("location", "File Location")
       .field("contact", "0987654321")
-      .attach("image", path.resolve(__dirname, "./test-files/sample-image.jpg"));
+      .attach("image", path.resolve(__dirname, "../uploads/image-46e363ef-8615-49d6-a3bd-153f5d5d3152.jpg"));
 
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);

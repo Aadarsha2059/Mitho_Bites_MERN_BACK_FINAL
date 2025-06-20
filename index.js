@@ -9,6 +9,7 @@ const productRouteAdmin=require("./routes/admin/productRouteAdmin")
 const restaurantRouteAdmin=require("./routes/admin/restaurantRouteAdmin")
 const orderRouteAdmin=require("./routes/admin/orderRouteAdmin")
 
+const paymentmethodRouteAdmin = require("./routes/admin/paymentmethodRouteAdmin")
 
 const adminCategoryRoutes = require("./routes/admin/foodcategoryRouteAdmin")
 
@@ -28,9 +29,7 @@ app.use("/api/admin/product", productRouteAdmin)
 app.use("/api/admin/category", adminCategoryRoutes)
 app.use("/api/admin/restaurant", restaurantRouteAdmin)
 app.use("/api/admin/order", orderRouteAdmin)
-
-
-
+app.use("/api/admin/paymentmethod", paymentmethodRouteAdmin)
 
 app.get(
     "/", //root targeted

@@ -1,8 +1,8 @@
 require("dotenv").config()
-import { listen } from "./index"
+const app = require("./index")
 
 const PORT= process.env.PORT
-listen(
+app.listen(
     PORT,
     () =>{
         console.log("Server running")

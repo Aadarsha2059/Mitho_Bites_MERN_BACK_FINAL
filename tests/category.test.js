@@ -37,7 +37,7 @@ describe("Category API", () => {
     const res = await request(app)
       .post("/api/admin/category")
       .field("name", "Test Category File")
-      .attach("image", path.resolve(__dirname, "./test-files/sample-image.jpg"));
+      .attach("image", path.resolve(__dirname, "../uploads/image-46e363ef-8615-49d6-a3bd-153f5d5d3152.jpg"));
 
     expect(res.statusCode).toBe(201);
     expect(res.body.success).toBe(true);
@@ -89,7 +89,7 @@ describe("Category API", () => {
     const res = await request(app)
       .put(`/api/admin/category/${testCategoryId}`)
       .field("name", "Test Category Updated File")
-      .attach("image", path.resolve(__dirname, "./test-files/sample-image.jpg"));
+      .attach("image", path.resolve(__dirname, "../uploads/image-46e363ef-8615-49d6-a3bd-153f5d5d3152.jpg"));
 
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);
