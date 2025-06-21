@@ -26,14 +26,15 @@ const productSchema = new mongoose.Schema(
             ref: 'foodCategory',
             required: true
         },
+        restaurantId: {
+            type: mongoose.Schema.ObjectId,
+            ref: 'Restaurant',
+            required: true
+        },
         type: {
             type: String,
             required: true,
             enum: ['Indian', 'Nepali', 'indian', 'nepali']
-        },
-        restaurant: {
-            type: String,
-            required: true
         },
         sellerId: {
             type: mongoose.Schema.ObjectId,
@@ -51,6 +52,6 @@ const productSchema = new mongoose.Schema(
 )
 
 // Add text index for search functionality
-productSchema.index({ name: 'text', description: 'text', restaurant: 'text' })
+productSchema.index({ name: 'text', description: 'text' })
 
-module.exports = mongoose.model('Product', productSchema)
+module.exports = mongoose.model("Product", productSchema)

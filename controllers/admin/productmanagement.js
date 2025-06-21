@@ -4,13 +4,13 @@ exports.createProduct = async (req, res) => {
     console.log("Create Product Request Body:", req.body);
     console.log("Create Product File:", req.file);
     
-    const { name, price, categoryId, type, restaurant } = req.body;
+    const { name, price, categoryId, type, restaurantId } = req.body;
 
-    if (!name || !price || !categoryId || !type || !restaurant) {
-        console.log("Missing required fields:", { name, price, categoryId, type, restaurant });
+    if (!name || !price || !categoryId || !type || !restaurantId) {
+        console.log("Missing required fields:", { name, price, categoryId, type, restaurantId });
         return res.status(400).json({
             success: false,
-            message: "Missing required fields: name, price, categoryId, type, restaurant",
+            message: "Missing required fields: name, price, categoryId, type, restaurantId",
         });
     }
 
@@ -37,10 +37,10 @@ exports.createProduct = async (req, res) => {
 
         // Normalize type to lowercase for consistency
         const normalizedType = type.toLowerCase();
-        if (!['veg', 'non-veg', 'vegan'].includes(normalizedType)) {
+        if (!['indian', 'nepali'].includes(normalizedType)) {
             return res.status(400).json({
                 success: false,
-                message: "Type must be one of: veg, non-veg, vegan",
+                message: "Type must be one of: indian, nepali",
             });
         }
 
@@ -49,10 +49,9 @@ exports.createProduct = async (req, res) => {
             price: numericPrice,
             categoryId,
             type: normalizedType,
-            restaurant: restaurant.trim(),
+            restaurantId,
             filepath,
-            description: `${name} - Delicious ${type} food from ${restaurant}`,
-            isVegetarian: normalizedType === 'veg' || normalizedType === 'vegan',
+            description: `${name} - Delicious ${type} food`,
         });
 
         const product = new Product({
@@ -60,18 +59,19 @@ exports.createProduct = async (req, res) => {
             price: numericPrice,
             categoryId,
             type: normalizedType,
-            restaurant: restaurant.trim(),
+            restaurantId,
             filepath,
-            description: `${name} - Delicious ${type} food from ${restaurant}`
+            description: `${name} - Delicious ${type} food`
         });
 
         console.log("Product object created, saving to database...");
         await product.save();
         console.log("Product saved successfully");
 
-        // Populate category details for response
+        // Populate category and restaurant details for response
         await product.populate("categoryId", "name");
-        console.log("Product populated with category");
+        await product.populate("restaurantId", "name location");
+        console.log("Product populated with category and restaurant");
 
         return res.status(201).json({
             success: true,
@@ -117,13 +117,13 @@ exports.getProducts = async (req, res) => {
         if (search) {
             filter.$or = [
                 { name: { $regex: search, $options: 'i' } },
-                { type: { $regex: search, $options: 'i' } },
-                { restaurant: { $regex: search, $options: 'i' } }
+                { type: { $regex: search, $options: 'i' } }
             ];
         }
 
         const products = await Product.find(filter)
             .populate("categoryId", "name")
+            .populate("restaurantId", "name location")
             .populate("sellerId", "firstName email")
             .skip(skip)
             .limit(Number(limit))

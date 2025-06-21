@@ -2,7 +2,10 @@ const Restaurant = require("../../models/Restaurant");
 
 exports.createRestaurant = async (req, res) => {
     const { name, location, contact, } = req.body;
-    const filename = req.file?.path
+    
+    console.log('Create Restaurant Request Body:', req.body);
+    console.log('Create Restaurant File:', req.file);
+    
     if (!name || !location || !contact) {
         return res.status(403).json({
             success: false,
@@ -11,16 +14,22 @@ exports.createRestaurant = async (req, res) => {
     }
 
     try {
-        const filepath = req.file?.path || null;
+        const filepath = req.file?.filename || null;
+        
+        console.log('File path to be saved:', filepath);
 
         const restaurant = new Restaurant({
             name,
             location,
             contact,
-            filepath: filename,
+            filepath,
         });
 
+        console.log('Restaurant object to save:', restaurant);
+
         await restaurant.save();
+        
+        console.log('Restaurant saved successfully:', restaurant);
 
         return res.status(200).json({
             success: true,
@@ -41,6 +50,8 @@ exports.getRestaurants = async (req, res) => {
         const { page = 1, limit = 10, search = "" } = req.query;
         const skip = (page - 1) * limit;
 
+        console.log('Get Restaurants Request:', { page, limit, search });
+
         let filter = {};
         if (search) {
             filter.$or = [
@@ -52,9 +63,13 @@ exports.getRestaurants = async (req, res) => {
 
         const restaurants = await Restaurant.find(filter)
             .skip(skip)
-            .limit(Number(limit));
+            .limit(Number(limit))
+            .sort({ createdAt: -1 });
 
         const total = await Restaurant.countDocuments(filter);
+
+        console.log('Found restaurants:', restaurants.length);
+        console.log('Sample restaurant data:', restaurants[0]);
 
         return res.status(200).json({
             success: true,
@@ -69,6 +84,109 @@ exports.getRestaurants = async (req, res) => {
         });
     } catch (err) {
         console.error("Get Restaurants Error:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error",
+        });
+    }
+};
+
+exports.updateRestaurant = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, location, contact } = req.body;
+        const filepath = req.file?.filename;
+
+        if (!name || !location || !contact) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing required fields",
+            });
+        }
+
+        const updateData = {
+            name: name.trim(),
+            location: location.trim(),
+            contact: contact.trim(),
+        };
+
+        if (filepath) {
+            updateData.filepath = filepath;
+        }
+
+        const restaurant = await Restaurant.findByIdAndUpdate(
+            id,
+            updateData,
+            { new: true, runValidators: true }
+        );
+
+        if (!restaurant) {
+            return res.status(404).json({
+                success: false,
+                message: "Restaurant not found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: restaurant,
+            message: "Restaurant updated successfully",
+        });
+    } catch (err) {
+        console.error("Update Restaurant Error:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error",
+        });
+    }
+};
+
+exports.deleteRestaurant = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const restaurant = await Restaurant.findByIdAndDelete(id);
+
+        if (!restaurant) {
+            return res.status(404).json({
+                success: false,
+                message: "Restaurant not found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Restaurant deleted successfully",
+        });
+    } catch (err) {
+        console.error("Delete Restaurant Error:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error",
+        });
+    }
+};
+
+exports.getRestaurantById = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const restaurant = await Restaurant.findById(id);
+
+        if (!restaurant) {
+            return res.status(404).json({
+                success: false,
+                message: "Restaurant not found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: restaurant,
+            message: "Restaurant fetched successfully",
+        });
+    } catch (err) {
+        console.error("Get Restaurant by ID Error:", err);
         return res.status(500).json({
             success: false,
             message: "Server error",

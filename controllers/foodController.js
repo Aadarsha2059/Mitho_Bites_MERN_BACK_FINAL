@@ -68,6 +68,7 @@ exports.getAllProducts = async (req, res) => {
 
         const products = await Product.find(filter)
             .populate("categoryId", "name")
+            .populate("restaurantId", "name location contact")
             .populate("sellerId", "firstName lastName email")
             .sort(sortOptions)
             .skip(skip)
@@ -100,6 +101,7 @@ exports.getProductById = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id)
             .populate("categoryId", "name")
+            .populate("restaurantId", "name location contact")
             .populate("sellerId", "firstName lastName email");
 
         if (!product) {

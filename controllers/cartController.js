@@ -9,7 +9,11 @@ exports.getCart = async (req, res) => {
         let cart = await Cart.findOne({ userId })
             .populate({
                 path: 'items.productId',
-                select: 'name price filepath isAvailable'
+                select: 'name price filepath isAvailable type',
+                populate: [
+                    { path: 'categoryId', select: 'name' },
+                    { path: 'restaurantId', select: 'name location' }
+                ]
             });
 
         if (!cart) {
@@ -88,7 +92,11 @@ exports.addToCart = async (req, res) => {
         // Populate product details
         await cart.populate({
             path: 'items.productId',
-            select: 'name price filepath isAvailable'
+            select: 'name price filepath isAvailable type',
+            populate: [
+                { path: 'categoryId', select: 'name' },
+                { path: 'restaurantId', select: 'name location' }
+            ]
         });
 
         return res.status(200).json({
@@ -149,7 +157,11 @@ exports.updateCartItem = async (req, res) => {
 
         await cart.populate({
             path: 'items.productId',
-            select: 'name price filepath isAvailable'
+            select: 'name price filepath isAvailable type',
+            populate: [
+                { path: 'categoryId', select: 'name' },
+                { path: 'restaurantId', select: 'name location' }
+            ]
         });
 
         return res.status(200).json({
@@ -188,7 +200,11 @@ exports.removeFromCart = async (req, res) => {
 
         await cart.populate({
             path: 'items.productId',
-            select: 'name price filepath isAvailable'
+            select: 'name price filepath isAvailable type',
+            populate: [
+                { path: 'categoryId', select: 'name' },
+                { path: 'restaurantId', select: 'name location' }
+            ]
         });
 
         return res.status(200).json({

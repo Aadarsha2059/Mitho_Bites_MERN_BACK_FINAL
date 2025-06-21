@@ -16,4 +16,23 @@ router.get(
     restaurantController.getRestaurants
 );
 
+// Get restaurant by ID
+router.get(
+    '/:id',
+    restaurantController.getRestaurantById
+);
+
+// Update restaurant (with optional image upload)
+router.put(
+    '/:id',
+    upload.single("image"),
+    restaurantController.updateRestaurant
+);
+
+// Delete restaurant
+router.delete(
+    '/:id',
+    restaurantController.deleteRestaurant
+);
+
 module.exports = router;

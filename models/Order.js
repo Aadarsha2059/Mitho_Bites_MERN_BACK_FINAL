@@ -18,6 +18,22 @@ const orderItemSchema = new mongoose.Schema({
     productName: {
         type: String,
         required: true
+    },
+    categoryName: {
+        type: String,
+        required: true
+    },
+    restaurantName: {
+        type: String,
+        required: true
+    },
+    restaurantLocation: {
+        type: String,
+        required: true
+    },
+    foodType: {
+        type: String,
+        required: true
     }
 });
 
