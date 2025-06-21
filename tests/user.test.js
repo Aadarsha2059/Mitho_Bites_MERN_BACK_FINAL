@@ -8,10 +8,12 @@ let userId;
 
 beforeAll(async () => {
   await User.deleteOne({ username: "testuser123" });
+  await User.deleteOne({ email: "test@example.com" });
 });
 
 afterAll(async () => {
   await User.deleteOne({ username: "testuser123" });
+  await User.deleteOne({ email: "test@example.com" });
   await mongoose.disconnect();
 });
 
@@ -19,14 +21,14 @@ describe("User Authentication API", () => {
   test("should fail to register user with missing required fields", async () => {
     const res = await request(app).post("/api/auth/register").send({
       fullname: "Test User",
-      // missing username, password, phone, address
+      // missing username, email, password, phone, address
     });
 
     expect(res.statusCode).toBe(400);
     expect(res.body.success).toBe(false);
     // Match exact message your API sends
     expect(res.body.message).toBe(
-      "All fields (fullname, username, password, confirmPassword, phone, address) are required."
+      "All fields (fullname, username, email, password, confirmPassword, phone, address) are required."
     );
   });
 
@@ -34,6 +36,7 @@ describe("User Authentication API", () => {
     const res = await request(app).post("/api/auth/register").send({
       fullname: "Test User",
       username: "testuser123",
+      email: "test@example.com",
       password: "password123",
       confirmpassword: "password321",
       phone: "1234567890",
@@ -45,10 +48,27 @@ describe("User Authentication API", () => {
     expect(res.body.message).toBe("Password and Confirm Password do not match.");
   });
 
+  test("should fail to register user with invalid email format", async () => {
+    const res = await request(app).post("/api/auth/register").send({
+      fullname: "Test User",
+      username: "testuser123",
+      email: "invalid-email",
+      password: "password123",
+      confirmpassword: "password123",
+      phone: "1234567890",
+      address: "Test Address",
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toBe("Please provide a valid email address.");
+  });
+
   test("should register user successfully", async () => {
     const res = await request(app).post("/api/auth/register").send({
       fullname: "Test User",
       username: "testuser123",
+      email: "test@example.com",
       password: "password123",
       confirmpassword: "password123",
       phone: "1234567890",
@@ -60,6 +80,7 @@ describe("User Authentication API", () => {
     // Adjust test if API returns user in "data" object or differently
     expect(res.body.data).toBeDefined();
     expect(res.body.data).toHaveProperty("_id");
+    expect(res.body.data).toHaveProperty("email", "test@example.com");
 
     userId = res.body.data._id;
   });
@@ -68,6 +89,7 @@ describe("User Authentication API", () => {
     const res = await request(app).post("/api/auth/register").send({
       fullname: "Another User",
       username: "testuser123", // existing username
+      email: "another@example.com",
       password: "password123",
       confirmpassword: "password123",
       phone: "0987654321",
@@ -76,7 +98,23 @@ describe("User Authentication API", () => {
 
     expect(res.statusCode).toBe(400);
     expect(res.body.success).toBe(false);
-    expect(res.body.message).toBe("User already exists");
+    expect(res.body.message).toBe("Username already exists");
+  });
+
+  test("should fail to register user with existing email", async () => {
+    const res = await request(app).post("/api/auth/register").send({
+      fullname: "Another User",
+      username: "anotheruser",
+      email: "test@example.com", // existing email
+      password: "password123",
+      confirmpassword: "password123",
+      phone: "0987654321",
+      address: "Other Address",
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toBe("Email already exists");
   });
 
   test("should login user with correct credentials", async () => {
@@ -129,6 +167,7 @@ describe("Admin User Management Routes", () => {
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data).toHaveProperty("username", "testuser123");
+    expect(res.body.data).toHaveProperty("email", "test@example.com");
   });
 
   test("should update user info with matching passwords", async () => {
@@ -138,6 +177,7 @@ describe("Admin User Management Routes", () => {
       .send({
         fullname: "Updated User",
         username: "testuser123",
+        email: "updated@example.com",
         phone: "1112223333",
         address: "Updated Address",
         password: "newpassword123",
@@ -147,6 +187,7 @@ describe("Admin User Management Routes", () => {
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data.fullname).toBe("Updated User");
+    expect(res.body.data.email).toBe("updated@example.com");
   });
 
   test("should fail update user if passwords do not match", async () => {

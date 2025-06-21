@@ -9,9 +9,10 @@ const {
 } = require("../../controllers/admin/usermanagement");
 
 const { authenticateUser, isAdmin } = require("../../middlewares/authorizedUser");
+const validateUser = require("../../middlewares/validateUser");
 
 // Create a new user
-router.post("/", createUser);
+router.post("/", validateUser, createUser);
 
 // Get all users (protected route, admin only)
 router.get("/", authenticateUser,
@@ -22,7 +23,7 @@ router.get("/", authenticateUser,
 router.get("/:id", getOneUser);
 
 // Update a user by ID
-router.put("/:id", updateOne);
+router.put("/:id", validateUser, updateOne);
 
 // Delete a user by ID
 router.delete("/:id", deleteOne);

@@ -3,23 +3,32 @@ const bcrypt = require("bcrypt");
 
 // Create User
 exports.createUser = async (req, res) => {
-    const { fullname, username, password, confirmpassword, phone, address } = req.body;
+    const { fullname, username, email, password, confirmpassword, phone, address } = req.body;
 
     // Validation
-    if (!fullname || !username || !password || !phone) {
+    if (!fullname || !username || !email || !password || !phone) {
         return res.status(400).json({
             success: false,
-            message: "Missing required fields",
+            message: "Missing required fields (fullname, username, email, password, phone)",
         });
     }
 
     try {
-        // Check if user already exists
-        const existingUser = await User.findOne({ username });
-        if (existingUser) {
+        // Check if user already exists by username
+        const existingUserByUsername = await User.findOne({ username });
+        if (existingUserByUsername) {
             return res.status(400).json({
                 success: false,
-                message: "User already exists",
+                message: "Username already exists",
+            });
+        }
+
+        // Check if user already exists by email
+        const existingUserByEmail = await User.findOne({ email });
+        if (existingUserByEmail) {
+            return res.status(400).json({
+                success: false,
+                message: "Email already exists",
             });
         }
 
@@ -30,6 +39,7 @@ exports.createUser = async (req, res) => {
         const newUser = new User({
             fullname,
             username,
+            email,
             password: hashedPassword,
             phone,
             address,
@@ -113,7 +123,7 @@ exports.getOneUser = async (req, res) => {
 // Update One User
 exports.updateOne = async (req, res) => {
     const { id } = req.params;
-    const { fullname, username, password, confirmpassword, phone, address } = req.body;
+    const { fullname, username, email, password, confirmpassword, phone, address } = req.body;
 
     // Validate password confirmation
     if (password && password !== confirmpassword) {
@@ -130,6 +140,19 @@ exports.updateOne = async (req, res) => {
             phone,
             address,
         };
+
+        // Handle email update with validation
+        if (email) {
+            // Check if email already exists for another user
+            const existingUserByEmail = await User.findOne({ email, _id: { $ne: id } });
+            if (existingUserByEmail) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Email already exists",
+                });
+            }
+            updateData.email = email;
+        }
 
         if (password) {
             updateData.password = await bcrypt.hash(password, 10);

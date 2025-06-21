@@ -1,11 +1,11 @@
 const validateUser = (req, res, next) => {
-  const { fullname, username, password, confirmpassword, phone, address } = req.body;
+  const { fullname, username, email, password, confirmpassword, phone, address } = req.body;
 
   // Check required fields
-  if (!fullname || !username || !password || !confirmpassword || !phone || !address) {
+  if (!fullname || !username || !email || !password || !confirmpassword || !phone || !address) {
     return res.status(400).json({ 
       success: false, 
-      message: "All fields (fullname, username, password, confirmPassword, phone, address) are required." 
+      message: "All fields (fullname, username, email, password, confirmPassword, phone, address) are required." 
     });
   }
 
@@ -22,6 +22,15 @@ const validateUser = (req, res, next) => {
     return res.status(400).json({ 
       success: false, 
       message: "Username must be at least 3 characters long." 
+    });
+  }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "Please provide a valid email address." 
     });
   }
 
