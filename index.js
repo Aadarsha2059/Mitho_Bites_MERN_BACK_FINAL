@@ -13,6 +13,11 @@ const paymentmethodRouteAdmin = require("./routes/admin/paymentmethodRouteAdmin"
 
 const adminCategoryRoutes = require("./routes/admin/foodcategoryRouteAdmin")
 
+// New user-facing routes
+const foodRoutes = require("./routes/foodRoutes")
+const cartRoutes = require("./routes/cartRoutes")
+const orderRoutes = require("./routes/orderRoutes")
+
 const path=require("path") 
 const cors = require("cors")
 
@@ -23,13 +28,22 @@ app.use("/uploads",express.static(path.join(__dirname,"uploads")))
 
 //2 new implementations
 connectDB()
+
+// Auth routes
 app.use("/api/auth",userRoutes)
+
+// Admin routes
 app.use("/api/admin/users",adminUserRoutes)
 app.use("/api/admin/product", productRouteAdmin)
 app.use("/api/admin/category", adminCategoryRoutes)
 app.use("/api/admin/restaurant", restaurantRouteAdmin)
 app.use("/api/admin/order", orderRouteAdmin)
 app.use("/api/admin/paymentmethod", paymentmethodRouteAdmin)
+
+// User-facing routes
+app.use("/api/food", foodRoutes)
+app.use("/api/cart", cartRoutes)
+app.use("/api/orders", orderRoutes)
 
 app.get(
     "/", //root targeted

@@ -3,14 +3,14 @@ const router = express.Router();
 
 const categoryController = require('../../controllers/admin/foodcategorymanagement');
 
-const upload=require("../../middlewares/fileupload")
+const upload = require("../../middlewares/fileupload")
 
 // implement using dot function
 router.post('/', 
     upload.single("image"),
-   
     categoryController.createCategory);
 router.get('/', categoryController.getAllCategories);
+router.get('/debug', categoryController.debugCategories); // Debug endpoint
 router.get('/:id', categoryController.getCategoryById);
 
 router.put('/:id', 

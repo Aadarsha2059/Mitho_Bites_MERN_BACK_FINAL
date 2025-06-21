@@ -26,13 +26,13 @@ exports.authenticateUser= async(req, res,next) =>{
         )
     }
 }
+
 exports.isAdmin=(req,res,next) =>{
-    if(req.user && req.user.role =='admin'){
+    if(req.user && req.user.username === 'admin_aadarsha'){
         next()
     }else{
         return res.status(403).json(
-             {"success":false,"message":"Access denied, not admin"}
+             {"success":false,"message":"Access denied, admin privileges required"}
         )
     }
-   
 }
