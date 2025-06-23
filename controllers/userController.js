@@ -40,7 +40,6 @@ exports.registerUser = async (req, res) => {
       password: hashedPassword,
       phone,
       address,
-      confirmpassword, 
     });
 
     await newUser.save();
@@ -89,16 +88,30 @@ exports.loginUser = async (req, res) => {
   }
 };
 
-// Update User (no change needed unless you want to add fullname later)
+// Update User (now with currentPassword check for sensitive changes)
 exports.updateUser = async (req, res) => {
   const { id } = req.params;
-  const { username, email, password, phone, address } = req.body;
+  const { username, email, password, phone, address, fullname, currentPassword } = req.body;
 
   try {
-    const updateData = { username, phone, address };
+    const updateData = { fullname, username, phone, address };
 
-    // Handle email update with validation
-    if (email) {
+    // Find the user
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Handle email update with validation and password confirmation
+    if (email && email !== user.email) {
+      // Require currentPassword
+      if (!currentPassword) {
+        return res.status(400).json({ success: false, message: "Current password required to change email." });
+      }
+      const passwordCheck = await bcrypt.compare(currentPassword, user.password);
+      if (!passwordCheck) {
+        return res.status(403).json({ success: false, message: "Current password is incorrect." });
+      }
       // Check if email already exists for another user
       const existingUserByEmail = await User.findOne({ email, _id: { $ne: id } });
       if (existingUserByEmail) {
@@ -107,7 +120,15 @@ exports.updateUser = async (req, res) => {
       updateData.email = email;
     }
 
+    // Handle password update with password confirmation
     if (password) {
+      if (!currentPassword) {
+        return res.status(400).json({ success: false, message: "Current password required to change password." });
+      }
+      const passwordCheck = await bcrypt.compare(currentPassword, user.password);
+      if (!passwordCheck) {
+        return res.status(403).json({ success: false, message: "Current password is incorrect." });
+      }
       updateData.password = await bcrypt.hash(password, 10);
     }
 

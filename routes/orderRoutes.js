@@ -21,4 +21,7 @@ router.put("/:id/cancel", orderController.cancelOrder);
 // Update payment status (admin only - you can add admin middleware here)
 router.put("/:id/payment", orderController.updatePaymentStatus);
 
+// Mark order as received
+router.put("/:id/received", orderController.markOrderReceived);
+
 module.exports = router; 

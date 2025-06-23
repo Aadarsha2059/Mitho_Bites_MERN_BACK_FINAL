@@ -2,6 +2,7 @@ const Order = require("../models/Order");
 const Cart = require("../models/Cart");
 const Product = require("../models/Product");
 const User = require("../models/User");
+const PaymentMethod = require("../models/paymentmethod");
 
 // Create order from cart
 exports.createOrder = async (req, res) => {
@@ -135,6 +136,15 @@ exports.createOrder = async (req, res) => {
         await order.save();
         console.log("Order saved successfully, ID:", order._id);
 
+        // Log payment data
+        const payment = new PaymentMethod({
+            food: order.items.map(i => i.productName).join(", "),
+            quantity: order.items.reduce((sum, i) => sum + i.quantity, 0),
+            totalprice: order.totalAmount,
+            paymentmode: order.paymentMethod
+        });
+        await payment.save();
+
         // Clear cart after successful order
         console.log("Clearing cart...");
         cart.items = [];
@@ -256,38 +266,20 @@ exports.cancelOrder = async (req, res) => {
     try {
         const userId = req.user._id;
         const orderId = req.params.id;
-
         const order = await Order.findOne({ _id: orderId, userId });
-
         if (!order) {
-            return res.status(404).json({
-                success: false,
-                message: "Order not found"
-            });
+            return res.status(404).json({ success: false, message: "Order not found" });
         }
-
-        // Check if order can be cancelled
-        if (order.orderStatus === "delivered" || order.orderStatus === "cancelled") {
-            return res.status(400).json({
-                success: false,
-                message: "Order cannot be cancelled"
-            });
+        // Only allow cancelling from pending
+        if (order.orderStatus !== "pending") {
+            return res.status(400).json({ success: false, message: "Order cannot be cancelled" });
         }
-
         order.orderStatus = "cancelled";
         await order.save();
-
-        return res.status(200).json({
-            success: true,
-            message: "Order cancelled successfully",
-            data: order
-        });
+        return res.status(200).json({ success: true, message: "Order cancelled successfully", data: order });
     } catch (err) {
         console.error("Cancel Order Error:", err);
-        return res.status(500).json({
-            success: false,
-            message: "Server error"
-        });
+        return res.status(500).json({ success: false, message: "Server error" });
     }
 };
 
@@ -326,5 +318,26 @@ exports.updatePaymentStatus = async (req, res) => {
             success: false,
             message: "Server error"
         });
+    }
+};
+
+// Mark order as received
+exports.markOrderReceived = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const orderId = req.params.id;
+        const order = await Order.findOne({ _id: orderId, userId });
+        if (!order) {
+            return res.status(404).json({ success: false, message: "Order not found" });
+        }
+        if (order.orderStatus !== "pending") {
+            return res.status(400).json({ success: false, message: "Order must be pending to be marked as received" });
+        }
+        order.orderStatus = "received";
+        await order.save();
+        return res.status(200).json({ success: true, message: "Order marked as received", data: order });
+    } catch (err) {
+        console.error("Mark Order Received Error:", err);
+        return res.status(500).json({ success: false, message: "Server error" });
     }
 }; 

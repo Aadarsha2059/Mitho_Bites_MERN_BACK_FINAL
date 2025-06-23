@@ -10,7 +10,7 @@ router.post('/',
     upload.single("image"),
     categoryController.createCategory);
 router.get('/', categoryController.getAllCategories);
-router.get('/debug', categoryController.debugCategories); // Debug endpoint
+router.get('/debug', categoryController.debugCategories); 
 router.get('/:id', categoryController.getCategoryById);
 
 router.put('/:id', 

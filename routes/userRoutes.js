@@ -19,7 +19,6 @@ router.post("/forgot-password", sendResetLink);
 // Reset password with token
 router.post("/reset-password/:token", resetPassword);
 
-// router.post("/request-reset",sendResentLink)
-// router.post("/reset-password/:token",resetPassword)
+
 
 module.exports = router;

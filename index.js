@@ -55,6 +55,18 @@ app.get(
 
 )
 
+// Health check endpoint for debugging
+app.get(
+    "/api/health",
+    (req,res) =>{
+        return res.status(200).json({
+            success: true,
+            message: "MERN Backend is running",
+            timestamp: new Date().toISOString()
+        })
+    }
+)
+
 app.get(
     "/post/:postid", //if second path is dynamic 
     (req,res) =>{
