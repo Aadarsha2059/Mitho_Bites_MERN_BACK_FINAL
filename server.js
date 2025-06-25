@@ -11,7 +11,15 @@ process.env.SECRET = process.env.SECRET || "your-secret-key-here"
 app.listen(
     PORT,
     () =>{
-        console.log(`Server running on port ${PORT}`)
-        console.log(`MongoDB URI: ${MONGODB_URI}`)
+        console.log(`🚀 Server running on port ${PORT}`)
+        console.log(`📊 MongoDB URI: ${MONGODB_URI}`)
+        
+        console.log(`📝 Registration: http://localhost:${PORT}/api/auth/register`)
+        console.log(`🔐 Login: http://localhost:${PORT}/api/auth/login`)
     }
-)
+).on('error', (err) => {
+    console.error('❌ Server failed to start:', err.message);
+    if (err.code === 'EADDRINUSE') {
+        console.error('Port 3000 is already in use. Please stop other servers or use a different port.');
+    }
+});

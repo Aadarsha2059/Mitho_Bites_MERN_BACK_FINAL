@@ -150,3 +150,51 @@ exports.getProducts = async (req, res) => {
         });
     }
 };
+
+exports.getOneProduct = async (req, res) => {
+    try {
+        const product = await Product.findById(req.params.id)
+            .populate("categoryId", "name")
+            .populate("restaurantId", "name location");
+        if (!product) {
+            return res.status(404).json({ success: false, message: "Product not found" });
+        }
+        res.status(200).json({ success: true, data: product });
+    } catch (err) {
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
+exports.updateProduct = async (req, res) => {
+    try {
+        const updateData = {
+            name: req.body.name,
+            price: req.body.price,
+            categoryId: req.body.categoryId,
+            type: req.body.type,
+            restaurantId: req.body.restaurantId,
+        };
+        if (req.file) {
+            updateData.filepath = req.file.filename;
+        }
+        const updatedProduct = await Product.findByIdAndUpdate(req.params.id, updateData, { new: true });
+        if (!updatedProduct) {
+            return res.status(404).json({ success: false, message: "Product not found" });
+        }
+        res.status(200).json({ success: true, data: updatedProduct, message: "Product updated successfully" });
+    } catch (err) {
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
+exports.deleteProduct = async (req, res) => {
+    try {
+        const deletedProduct = await Product.findByIdAndDelete(req.params.id);
+        if (!deletedProduct) {
+            return res.status(404).json({ success: false, message: "Product not found" });
+        }
+        res.status(200).json({ success: true, message: "Product deleted" });
+    } catch (err) {
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+};

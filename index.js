@@ -18,8 +18,13 @@ const foodRoutes = require("./routes/foodRoutes")
 const cartRoutes = require("./routes/cartRoutes")
 const orderRoutes = require("./routes/orderRoutes")
 
+// Import models for public endpoints
+const Category = require("./models/foodCategory")
+const Restaurant = require("./models/Restaurant")
+
 const path=require("path") 
 const cors = require("cors")
+const feedbackRoutes = require('./routes/feedbackRoutes')
 
 const app=express() 
 app.use(cors())
@@ -44,6 +49,42 @@ app.use("/api/admin/paymentmethod", paymentmethodRouteAdmin)
 app.use("/api/food", foodRoutes)
 app.use("/api/cart", cartRoutes)
 app.use("/api/orders", orderRoutes)
+app.use("/api/feedbacks", feedbackRoutes)
+
+// Public endpoints for Flutter app
+app.get("/api/categories", async (req, res) => {
+    try {
+        const categories = await Category.find().sort({ name: 1 });
+        return res.status(200).json({
+            success: true,
+            message: "Categories fetched successfully",
+            data: categories
+        });
+    } catch (err) {
+        console.error("Get Categories Error:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error"
+        });
+    }
+});
+
+app.get("/api/restaurants", async (req, res) => {
+    try {
+        const restaurants = await Restaurant.find().sort({ name: 1 });
+        return res.status(200).json({
+            success: true,
+            message: "Restaurants fetched successfully",
+            data: restaurants
+        });
+    } catch (err) {
+        console.error("Get Restaurants Error:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error"
+        });
+    }
+});
 
 app.get(
     "/", //root targeted

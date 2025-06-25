@@ -12,4 +12,8 @@ router.get(
     "/",
     productController.getProducts
 )
+router.get('/:id', productController.getOneProduct);
+router.put('/:id', upload.single('image'), productController.updateProduct);
+router.delete('/:id', productController.deleteProduct);
+
 module.exports=router

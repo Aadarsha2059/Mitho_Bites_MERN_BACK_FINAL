@@ -6,6 +6,14 @@ exports.createCategory = async (req, res) => {
         const filename = req.file?.path
         console.log('Creating category with filepath:', filename);
 
+        // Enforce image upload
+        if (!filename) {
+            return res.status(400).json({
+                success: false,
+                message: "Image is required for category."
+            });
+        }
+
         const category = new Category({ name: req.body.name, filepath: filename });
         await category.save();
         console.log('Category created successfully:', category);
@@ -51,6 +59,18 @@ exports.updateCategory = async (req, res) => {
         const filename = req.file?.path
         console.log('Updating category with filepath:', filename);
         
+        // Fetch the existing category
+        const existingCategory = await Category.findById(req.params.id);
+        if (!existingCategory) return res.status(404).json({ success: false, message: 'Category not found' });
+
+        // Enforce image presence: either a new image is uploaded, or the category already has an image
+        if (!filename && !existingCategory.filepath) {
+            return res.status(400).json({
+                success: false,
+                message: "Image is required for category."
+            });
+        }
+
         const data = {
             name: req.body.name
         }
