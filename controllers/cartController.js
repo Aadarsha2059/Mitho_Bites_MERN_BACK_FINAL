@@ -40,11 +40,29 @@ exports.getCart = async (req, res) => {
             await cart.save();
         }
 
-        // Return the cart data without complex transformation for now
+        // Transform cart data with full image URLs
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedCart = cart.toObject();
+        
+        // Transform product images in cart items
+        if (transformedCart.items && Array.isArray(transformedCart.items)) {
+            transformedCart.items = transformedCart.items.map(item => {
+                const transformedItem = { ...item };
+                if (item.productId && item.productId.filepath) {
+                    const cleanFilename = item.productId.filepath.replace(/^uploads\//, '');
+                    transformedItem.productId = {
+                        ...item.productId,
+                        image: `${baseUrl}/uploads/${cleanFilename}`
+                    };
+                }
+                return transformedItem;
+            });
+        }
+
         return res.status(200).json({
             success: true,
             message: "Cart fetched successfully",
-            data: cart
+            data: transformedCart
         });
     } catch (err) {
         console.error("Get Cart Error:", err);
@@ -128,11 +146,31 @@ exports.addToCart = async (req, res) => {
 
         console.log('Cart populated successfully');
 
-        // Return the cart data without complex transformation for now
+        // Transform cart data with full image URLs
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedCart = cart.toObject();
+        
+        // Transform product images in cart items
+        if (transformedCart.items && Array.isArray(transformedCart.items)) {
+            transformedCart.items = transformedCart.items.map(item => {
+                const transformedItem = { ...item };
+                if (item.productId && item.productId.filepath) {
+                    const cleanFilename = item.productId.filepath.replace(/^uploads\//, '');
+                    transformedItem.productId = {
+                        ...item.productId,
+                        image: `${baseUrl}/uploads/${cleanFilename}`
+                    };
+                }
+                return transformedItem;
+            });
+        }
+
+        console.log('Cart transformation completed');
+
         return res.status(200).json({
             success: true,
             message: "Item added to cart successfully",
-            data: cart
+            data: transformedCart
         });
     } catch (err) {
         console.error("Add to Cart Error:", err);
@@ -196,10 +234,29 @@ exports.updateCartItem = async (req, res) => {
             ]
         });
 
+        // Transform cart data with full image URLs
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedCart = cart.toObject();
+        
+        // Transform product images in cart items
+        if (transformedCart.items && Array.isArray(transformedCart.items)) {
+            transformedCart.items = transformedCart.items.map(item => {
+                const transformedItem = { ...item };
+                if (item.productId && item.productId.filepath) {
+                    const cleanFilename = item.productId.filepath.replace(/^uploads\//, '');
+                    transformedItem.productId = {
+                        ...item.productId,
+                        image: `${baseUrl}/uploads/${cleanFilename}`
+                    };
+                }
+                return transformedItem;
+            });
+        }
+
         return res.status(200).json({
             success: true,
             message: "Cart updated successfully",
-            data: cart
+            data: transformedCart
         });
     } catch (err) {
         console.error("Update Cart Error:", err);
@@ -239,10 +296,29 @@ exports.removeFromCart = async (req, res) => {
             ]
         });
 
+        // Transform cart data with full image URLs
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedCart = cart.toObject();
+        
+        // Transform product images in cart items
+        if (transformedCart.items && Array.isArray(transformedCart.items)) {
+            transformedCart.items = transformedCart.items.map(item => {
+                const transformedItem = { ...item };
+                if (item.productId && item.productId.filepath) {
+                    const cleanFilename = item.productId.filepath.replace(/^uploads\//, '');
+                    transformedItem.productId = {
+                        ...item.productId,
+                        image: `${baseUrl}/uploads/${cleanFilename}`
+                    };
+                }
+                return transformedItem;
+            });
+        }
+
         return res.status(200).json({
             success: true,
             message: "Item removed from cart successfully",
-            data: cart
+            data: transformedCart
         });
     } catch (err) {
         console.error("Remove from Cart Error:", err);

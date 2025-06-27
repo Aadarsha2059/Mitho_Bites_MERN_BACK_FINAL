@@ -131,9 +131,13 @@ exports.updateRestaurant = async (req, res) => {
             });
         }
 
+        // Transform restaurant with full image URL
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedRestaurant = transformRestaurantData(restaurant, baseUrl);
+
         return res.status(200).json({
             success: true,
-            data: restaurant,
+            data: transformedRestaurant,
             message: "Restaurant updated successfully",
         });
     } catch (err) {
@@ -184,9 +188,13 @@ exports.getRestaurantById = async (req, res) => {
             });
         }
 
+        // Transform restaurant with full image URL
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedRestaurant = transformRestaurantData(restaurant, baseUrl);
+
         return res.status(200).json({
             success: true,
-            data: restaurant,
+            data: transformedRestaurant,
             message: "Restaurant fetched successfully",
         });
     } catch (err) {

@@ -194,33 +194,39 @@ exports.getUserOrders = async (req, res) => {
         const orders = await Order.find(filter)
             .populate({
                 path: 'items.productId',
-                select: 'name price filepath description type isAvailable'
-            })
-            .populate({
-                path: 'items.productId.categoryId',
-                select: 'name filepath'
-            })
-            .populate({
-                path: 'items.productId.restaurantId',
-                select: 'name filepath location contact'
+                select: 'name price filepath description type',
+                populate: [
+                    { path: 'categoryId', select: 'name' },
+                    { path: 'restaurantId', select: 'name location' }
+                ]
             })
             .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(Number(limit));
+            .limit(limit)
+            .skip(skip);
 
         console.log("Orders found:", orders.length);
 
-        // Transform orders to include full image URLs
+        // Transform orders with full image URLs
         const baseUrl = `${req.protocol}://${req.get('host')}`;
         const transformedOrders = orders.map(order => {
-            const orderObj = order.toObject();
-            orderObj.items = orderObj.items.map(item => {
-                if (item.productId) {
-                    item.productId = transformProductData(item.productId, baseUrl);
-                }
-                return item;
-            });
-            return orderObj;
+            const transformedOrder = order.toObject();
+            
+            // Transform product images in order items
+            if (transformedOrder.items && Array.isArray(transformedOrder.items)) {
+                transformedOrder.items = transformedOrder.items.map(item => {
+                    const transformedItem = { ...item };
+                    if (item.productId && item.productId.filepath) {
+                        const cleanFilename = item.productId.filepath.replace(/^uploads\//, '');
+                        transformedItem.productId = {
+                            ...item.productId,
+                            image: `${baseUrl}/uploads/${cleanFilename}`
+                        };
+                    }
+                    return transformedItem;
+                });
+            }
+            
+            return transformedOrder;
         });
 
         console.log("Transformed orders:", JSON.stringify(transformedOrders, null, 2));

@@ -1,7 +1,7 @@
 require("dotenv").config()
 const app = require("./index")
 
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 5050
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/mithobites"
 
 // Set default environment variables if not provided
@@ -20,6 +20,6 @@ app.listen(
 ).on('error', (err) => {
     console.error('❌ Server failed to start:', err.message);
     if (err.code === 'EADDRINUSE') {
-        console.error('Port 3000 is already in use. Please stop other servers or use a different port.');
+        console.error(`Port ${PORT} is already in use. Please stop other servers or use a different port.`);
     }
 });
