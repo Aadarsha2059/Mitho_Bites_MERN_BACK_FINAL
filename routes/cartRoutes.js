@@ -6,6 +6,9 @@ const { authenticateUser } = require("../middlewares/authorizedUser");
 // All cart routes require authentication
 router.use(authenticateUser);
 
+// Test authentication
+router.get("/test", cartController.testAuth);
+
 // Get user's cart
 router.get("/", cartController.getCart);
 

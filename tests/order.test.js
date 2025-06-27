@@ -42,13 +42,15 @@ describe("Order API", () => {
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.message).toBe("Order placed successfully");
-    expect(res.body.data).toMatchObject({
+    expect(res.body.data).toHaveProperty("items");
+    expect(res.body.data.items).toHaveLength(1);
+    expect(res.body.data.items[0]).toMatchObject({
       productId: orderData.productId,
-      userId: orderData.userId,
       quantity: orderData.quantity,
       price: orderData.price,
-      status: "Pending", // default status
     });
+    expect(res.body.data).toHaveProperty("totalAmount", orderData.price * orderData.quantity);
+    expect(res.body.data).toHaveProperty("orderStatus", "pending");
 
     testOrderId = res.body.data._id;
   });
@@ -71,16 +73,16 @@ describe("Order API", () => {
       .query({
         page: 1,
         limit: 5,
-        search: "Pending",
+        search: "pending",
       });
 
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);
     expect(Array.isArray(res.body.data)).toBe(true);
-    // All returned orders should have status matching "Pending" (case insensitive)
+    // All returned orders should have status matching "pending" (case insensitive)
     if (res.body.data.length > 0) {
       res.body.data.forEach((order) => {
-        expect(order.status.toLowerCase()).toContain("pending");
+        expect(order.orderStatus.toLowerCase()).toContain("pending");
       });
     }
     expect(res.body.pagination.page).toBe(1);

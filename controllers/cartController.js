@@ -1,5 +1,24 @@
 const Cart = require("../models/Cart");
 const Product = require("../models/Product");
+const { transformProductData } = require("../utils/imageUtils");
+
+// Test endpoint to verify authentication
+exports.testAuth = async (req, res) => {
+    try {
+        console.log('Test auth - User:', req.user);
+        return res.status(200).json({
+            success: true,
+            message: "Authentication working",
+            user: req.user
+        });
+    } catch (err) {
+        console.error("Test Auth Error:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error"
+        });
+    }
+};
 
 // Get user's cart
 exports.getCart = async (req, res) => {
@@ -21,6 +40,7 @@ exports.getCart = async (req, res) => {
             await cart.save();
         }
 
+        // Return the cart data without complex transformation for now
         return res.status(200).json({
             success: true,
             message: "Cart fetched successfully",
@@ -41,6 +61,8 @@ exports.addToCart = async (req, res) => {
         const userId = req.user._id;
         const { productId, quantity = 1 } = req.body;
 
+        console.log('Add to cart request:', { userId, productId, quantity });
+
         if (!productId) {
             return res.status(400).json({
                 success: false,
@@ -51,6 +73,7 @@ exports.addToCart = async (req, res) => {
         // Check if product exists and is available
         const product = await Product.findById(productId);
         if (!product) {
+            console.log('Product not found:', productId);
             return res.status(404).json({
                 success: false,
                 message: "Product not found"
@@ -58,6 +81,7 @@ exports.addToCart = async (req, res) => {
         }
 
         if (!product.isAvailable) {
+            console.log('Product not available:', productId);
             return res.status(400).json({
                 success: false,
                 message: "Product is not available"
@@ -78,6 +102,7 @@ exports.addToCart = async (req, res) => {
         if (existingItemIndex > -1) {
             // Update quantity
             cart.items[existingItemIndex].quantity += quantity;
+            console.log('Updated existing item quantity');
         } else {
             // Add new item
             cart.items.push({
@@ -85,9 +110,11 @@ exports.addToCart = async (req, res) => {
                 quantity,
                 price: product.price
             });
+            console.log('Added new item to cart');
         }
 
         await cart.save();
+        console.log('Cart saved successfully');
 
         // Populate product details
         await cart.populate({
@@ -99,6 +126,9 @@ exports.addToCart = async (req, res) => {
             ]
         });
 
+        console.log('Cart populated successfully');
+
+        // Return the cart data without complex transformation for now
         return res.status(200).json({
             success: true,
             message: "Item added to cart successfully",
@@ -106,9 +136,11 @@ exports.addToCart = async (req, res) => {
         });
     } catch (err) {
         console.error("Add to Cart Error:", err);
+        console.error("Error stack:", err.stack);
         return res.status(500).json({
             success: false,
-            message: "Server error"
+            message: "Server error",
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
         });
     }
 };
@@ -244,6 +276,52 @@ exports.clearCart = async (req, res) => {
         });
     } catch (err) {
         console.error("Clear Cart Error:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error"
+        });
+    }
+};
+
+exports.getUserCart = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        
+        const cartItems = await Cart.find({ userId })
+            .populate({
+                path: "productId",
+                populate: [
+                    { path: "categoryId", select: "name filepath" },
+                    { path: "restaurantId", select: "name location contact filepath" }
+                ]
+            });
+
+        // Transform cart items with full image URLs
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedCartItems = cartItems.map(item => {
+            const transformedItem = item.toObject();
+            if (transformedItem.productId) {
+                transformedItem.product = transformProductData(transformedItem.productId, baseUrl);
+            }
+            return {
+                _id: transformedItem._id,
+                userId: transformedItem.userId,
+                productId: transformedItem.productId?._id,
+                product: transformedItem.product,
+                quantity: transformedItem.quantity,
+                price: transformedItem.price,
+                createdAt: transformedItem.createdAt,
+                updatedAt: transformedItem.updatedAt
+            };
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Cart items fetched successfully",
+            data: transformedCartItems
+        });
+    } catch (err) {
+        console.error("Get User Cart Error:", err);
         return res.status(500).json({
             success: false,
             message: "Server error"

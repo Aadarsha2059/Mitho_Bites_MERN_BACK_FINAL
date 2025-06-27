@@ -68,4 +68,95 @@ exports.getPaymentMethods = async (req, res) => {
             message: "Server error",
         });
     }
+};
+
+// Get One Payment Method
+exports.getOnePaymentMethod = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const payment = await PaymentMethod.findById(id);
+        if (!payment) {
+            return res.status(404).json({
+                success: false,
+                message: "Payment method not found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Payment method fetched successfully",
+            data: payment,
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: err.message,
+        });
+    }
+};
+
+// Update Payment Method
+exports.updatePaymentMethod = async (req, res) => {
+    const { id } = req.params;
+    const { food, quantity, totalprice, paymentmode } = req.body;
+
+    try {
+        const updateData = {
+            food,
+            quantity,
+            totalprice,
+            paymentmode,
+        };
+
+        const updatedPayment = await PaymentMethod.findByIdAndUpdate(id, updateData, {
+            new: true,
+        });
+
+        if (!updatedPayment) {
+            return res.status(404).json({
+                success: false,
+                message: "Payment method not found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Payment method updated successfully",
+            data: updatedPayment,
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: err.message,
+        });
+    }
+};
+
+// Delete Payment Method
+exports.deletePaymentMethod = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const deletedPayment = await PaymentMethod.findByIdAndDelete(id);
+        if (!deletedPayment) {
+            return res.status(404).json({
+                success: false,
+                message: "Payment method not found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Payment method deleted successfully",
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: err.message,
+        });
+    }
 }; 

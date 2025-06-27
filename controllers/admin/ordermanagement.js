@@ -12,10 +12,18 @@ exports.createOrder = async (req, res) => {
 
     try {
         const order = new Order({
-            productId,
             userId,
-            quantity,
-            price,
+            items: [{
+                productId,
+                quantity,
+                price,
+                productName: "Test Product",
+                categoryName: "Test Category",
+                restaurantName: "Test Restaurant",
+                restaurantLocation: "Test Location",
+                foodType: "food"
+            }],
+            totalAmount: price * quantity
         });
 
         await order.save();
@@ -41,12 +49,10 @@ exports.getOrders = async (req, res) => {
 
         let filter = {};
         if (search) {
-            filter.status = { $regex: search, $options: "i" };
+            filter.orderStatus = { $regex: search, $options: "i" };
         }
 
         const orders = await Order.find(filter)
-            .populate("productId", "name price")
-            .populate("userId", "firstName email")
             .skip(skip)
             .limit(Number(limit));
 

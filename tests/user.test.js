@@ -195,13 +195,18 @@ describe("Admin User Management Routes", () => {
       .put(`/api/admin/users/${userId}`)
       .set("Authorization", "Bearer " + authToken)
       .send({
+        fullname: "Test User",
+        username: "testuser123",
+        email: "test@example.com",
+        phone: "1234567890",
+        address: "Test Address",
         password: "newpass",
         confirmpassword: "wrongconfirm",
       });
 
     expect(res.statusCode).toBe(400);
     expect(res.body.success).toBe(false);
-    expect(res.body.message).toBe("Passwords do not match");
+    expect(res.body.message).toBe("Password and Confirm Password do not match.");
   });
 
   test("should delete user", async () => {

@@ -1,6 +1,7 @@
 const Product = require("../models/Product");
 const Category = require("../models/foodCategory");
 const User = require("../models/User");
+const { transformProductData, transformCategoryData } = require("../utils/imageUtils");
 
 // Get all products with filtering, sorting, and pagination
 exports.getAllProducts = async (req, res) => {
@@ -26,8 +27,7 @@ exports.getAllProducts = async (req, res) => {
         if (search) {
             filter.$or = [
                 { name: { $regex: search, $options: 'i' } },
-                { description: { $regex: search, $options: 'i' } },
-                { restaurant: { $regex: search, $options: 'i' } }
+                { description: { $regex: search, $options: 'i' } }
             ];
         }
 
@@ -67,8 +67,8 @@ exports.getAllProducts = async (req, res) => {
         }
 
         const products = await Product.find(filter)
-            .populate("categoryId", "name")
-            .populate("restaurantId", "name location contact")
+            .populate("categoryId", "name filepath")
+            .populate("restaurantId", "name location contact filepath")
             .populate("sellerId", "firstName lastName email")
             .sort(sortOptions)
             .skip(skip)
@@ -76,10 +76,14 @@ exports.getAllProducts = async (req, res) => {
 
         const total = await Product.countDocuments(filter);
 
+        // Transform products with full image URLs
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedProducts = products.map(product => transformProductData(product, baseUrl));
+
         return res.status(200).json({
             success: true,
             message: "Products fetched successfully",
-            data: products,
+            data: transformedProducts,
             pagination: {
                 total,
                 page: Number(page),
@@ -100,8 +104,8 @@ exports.getAllProducts = async (req, res) => {
 exports.getProductById = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id)
-            .populate("categoryId", "name")
-            .populate("restaurantId", "name location contact")
+            .populate("categoryId", "name filepath")
+            .populate("restaurantId", "name location contact filepath")
             .populate("sellerId", "firstName lastName email");
 
         if (!product) {
@@ -111,10 +115,14 @@ exports.getProductById = async (req, res) => {
             });
         }
 
+        // Transform product with full image URLs
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedProduct = transformProductData(product, baseUrl);
+
         return res.status(200).json({
             success: true,
             message: "Product fetched successfully",
-            data: product
+            data: transformedProduct
         });
     } catch (err) {
         console.error("Get Product Error:", err);
@@ -130,10 +138,14 @@ exports.getAllCategories = async (req, res) => {
     try {
         const categories = await Category.find().sort({ name: 1 });
 
+        // Transform categories with full image URLs
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedCategories = categories.map(category => transformCategoryData(category, baseUrl));
+
         return res.status(200).json({
             success: true,
             message: "Categories fetched successfully",
-            data: categories
+            data: transformedCategories
         });
     } catch (err) {
         console.error("Get Categories Error:", err);
@@ -156,10 +168,14 @@ exports.getCategoryById = async (req, res) => {
             });
         }
 
+        // Transform category with full image URL
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedCategory = transformCategoryData(category, baseUrl);
+
         return res.status(200).json({
             success: true,
             message: "Category fetched successfully",
-            data: category
+            data: transformedCategory
         });
     } catch (err) {
         console.error("Get Category Error:", err);

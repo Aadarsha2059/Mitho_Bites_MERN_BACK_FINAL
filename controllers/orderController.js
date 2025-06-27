@@ -3,6 +3,7 @@ const Cart = require("../models/Cart");
 const Product = require("../models/Product");
 const User = require("../models/User");
 const PaymentMethod = require("../models/paymentmethod");
+const { transformProductData } = require("../utils/imageUtils");
 
 // Create order from cart
 exports.createOrder = async (req, res) => {
@@ -193,14 +194,36 @@ exports.getUserOrders = async (req, res) => {
         const orders = await Order.find(filter)
             .populate({
                 path: 'items.productId',
-                select: 'name price filepath'
+                select: 'name price filepath description type isAvailable'
+            })
+            .populate({
+                path: 'items.productId.categoryId',
+                select: 'name filepath'
+            })
+            .populate({
+                path: 'items.productId.restaurantId',
+                select: 'name filepath location contact'
             })
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(Number(limit));
 
         console.log("Orders found:", orders.length);
-        console.log("Orders:", JSON.stringify(orders, null, 2));
+
+        // Transform orders to include full image URLs
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedOrders = orders.map(order => {
+            const orderObj = order.toObject();
+            orderObj.items = orderObj.items.map(item => {
+                if (item.productId) {
+                    item.productId = transformProductData(item.productId, baseUrl);
+                }
+                return item;
+            });
+            return orderObj;
+        });
+
+        console.log("Transformed orders:", JSON.stringify(transformedOrders, null, 2));
 
         const total = await Order.countDocuments(filter);
         console.log("Total orders:", total);
@@ -209,7 +232,7 @@ exports.getUserOrders = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: "Orders fetched successfully",
-            data: orders,
+            data: transformedOrders,
             pagination: {
                 total,
                 page: Number(page),

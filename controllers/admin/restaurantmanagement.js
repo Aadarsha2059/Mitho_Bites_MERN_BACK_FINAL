@@ -1,4 +1,5 @@
 const Restaurant = require("../../models/Restaurant");
+const { transformRestaurantData } = require("../../utils/imageUtils");
 
 exports.createRestaurant = async (req, res) => {
     const { name, location, contact, } = req.body;
@@ -56,8 +57,7 @@ exports.getRestaurants = async (req, res) => {
         if (search) {
             filter.$or = [
                 { name: { $regex: search, $options: 'i' } },
-                { location: { $regex: search, $options: 'i' } },
-                { contact: { $regex: search, $options: 'i' } },
+                { location: { $regex: search, $options: 'i' } }
             ];
         }
 
@@ -68,25 +68,29 @@ exports.getRestaurants = async (req, res) => {
 
         const total = await Restaurant.countDocuments(filter);
 
+        // Transform restaurants with full image URLs
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedRestaurants = restaurants.map(restaurant => transformRestaurantData(restaurant, baseUrl));
+
         console.log('Found restaurants:', restaurants.length);
         console.log('Sample restaurant data:', restaurants[0]);
 
         return res.status(200).json({
             success: true,
             message: "Restaurants fetched successfully",
-            data: restaurants,
+            data: transformedRestaurants,
             pagination: {
                 total,
                 page: Number(page),
                 limit: Number(limit),
-                totalPages: Math.ceil(total / limit),
-            },
+                totalPages: Math.ceil(total / limit)
+            }
         });
     } catch (err) {
         console.error("Get Restaurants Error:", err);
         return res.status(500).json({
             success: false,
-            message: "Server error",
+            message: "Server error"
         });
     }
 };
@@ -190,6 +194,34 @@ exports.getRestaurantById = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Server error",
+        });
+    }
+};
+
+exports.getOneRestaurant = async (req, res) => {
+    try {
+        const restaurant = await Restaurant.findById(req.params.id);
+        if (!restaurant) {
+            return res.status(404).json({
+                success: false,
+                message: "Restaurant not found"
+            });
+        }
+
+        // Transform restaurant with full image URL
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedRestaurant = transformRestaurantData(restaurant, baseUrl);
+
+        return res.status(200).json({
+            success: true,
+            message: "Restaurant fetched successfully",
+            data: transformedRestaurant
+        });
+    } catch (err) {
+        console.error("Get Restaurant Error:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error"
         });
     }
 };

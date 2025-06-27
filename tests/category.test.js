@@ -22,13 +22,14 @@ describe("Category API", () => {
   test("should create category without file upload", async () => {
     const res = await request(app)
       .post("/api/admin/category")
-      .send({ name: "Test Category" });
+      .field("name", "Test Category")
+      .attach("image", path.resolve(__dirname, "../uploads/image-46e363ef-8615-49d6-a3bd-153f5d5d3152.jpg"));
 
     expect(res.statusCode).toBe(201);
     expect(res.body.success).toBe(true);
     expect(res.body.message).toBe("Created");
     expect(res.body.data).toHaveProperty("name", "Test Category");
-    expect(res.body.data).not.toHaveProperty("filepath");
+    expect(res.body.data.filepath).toBeTruthy();
 
     testCategoryId = res.body.data._id;
   });

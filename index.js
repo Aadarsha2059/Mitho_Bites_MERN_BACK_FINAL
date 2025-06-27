@@ -21,6 +21,10 @@ const orderRoutes = require("./routes/orderRoutes")
 // Import models for public endpoints
 const Category = require("./models/foodCategory")
 const Restaurant = require("./models/Restaurant")
+const Product = require("./models/Product")
+
+// Import utility functions
+const { transformProductData, transformCategoryData, transformRestaurantData } = require("./utils/imageUtils")
 
 const path=require("path") 
 const cors = require("cors")
@@ -55,10 +59,15 @@ app.use("/api/feedbacks", feedbackRoutes)
 app.get("/api/categories", async (req, res) => {
     try {
         const categories = await Category.find().sort({ name: 1 });
+        
+        // Transform categories with full image URLs
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedCategories = categories.map(category => transformCategoryData(category, baseUrl));
+        
         return res.status(200).json({
             success: true,
             message: "Categories fetched successfully",
-            data: categories
+            data: transformedCategories
         });
     } catch (err) {
         console.error("Get Categories Error:", err);
@@ -69,16 +78,140 @@ app.get("/api/categories", async (req, res) => {
     }
 });
 
+app.get("/api/categories/:id", async (req, res) => {
+    try {
+        const category = await Category.findById(req.params.id);
+
+        if (!category) {
+            return res.status(404).json({
+                success: false,
+                message: "Category not found"
+            });
+        }
+
+        // Transform category with full image URL
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedCategory = transformCategoryData(category, baseUrl);
+
+        return res.status(200).json({
+            success: true,
+            message: "Category fetched successfully",
+            data: transformedCategory
+        });
+    } catch (err) {
+        console.error("Get Category Error:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error"
+        });
+    }
+});
+
 app.get("/api/restaurants", async (req, res) => {
     try {
         const restaurants = await Restaurant.find().sort({ name: 1 });
+        
+        // Transform restaurants with full image URLs
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedRestaurants = restaurants.map(restaurant => transformRestaurantData(restaurant, baseUrl));
+        
         return res.status(200).json({
             success: true,
             message: "Restaurants fetched successfully",
-            data: restaurants
+            data: transformedRestaurants
         });
     } catch (err) {
         console.error("Get Restaurants Error:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error"
+        });
+    }
+});
+
+app.get("/api/restaurants/:id", async (req, res) => {
+    try {
+        const restaurant = await Restaurant.findById(req.params.id);
+
+        if (!restaurant) {
+            return res.status(404).json({
+                success: false,
+                message: "Restaurant not found"
+            });
+        }
+
+        // Transform restaurant with full image URL
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedRestaurant = transformRestaurantData(restaurant, baseUrl);
+
+        return res.status(200).json({
+            success: true,
+            message: "Restaurant fetched successfully",
+            data: transformedRestaurant
+        });
+    } catch (err) {
+        console.error("Get Restaurant Error:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error"
+        });
+    }
+});
+
+app.get("/api/products", async (req, res) => {
+    try {
+        const { category } = req.query;
+        let filter = {};
+        if (category) {
+            filter.categoryId = category;
+        }
+        
+        let products = await Product.find(filter)
+            .populate("restaurantId", "name filepath location contact")
+            .populate("categoryId", "name filepath");
+        
+        // Transform products with full image URLs using utility function
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedProducts = products.map(product => transformProductData(product, baseUrl));
+        
+        return res.status(200).json({
+            success: true,
+            message: "Products fetched successfully",
+            data: transformedProducts
+        });
+    } catch (err) {
+        console.error("Get Products Error:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error"
+        });
+    }
+});
+
+app.get("/api/products/:id", async (req, res) => {
+    try {
+        const product = await Product.findById(req.params.id)
+            .populate("restaurantId", "name filepath location contact")
+            .populate("categoryId", "name filepath");
+
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: "Product not found"
+            });
+        }
+
+        // Transform product with full image URLs
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedProduct = transformProductData(product, baseUrl);
+
+        return res.status(200).json({
+            success: true,
+            message: "Product fetched successfully",
+            data: transformedProduct
+        });
+    } catch (err) {
+        console.error("Get Product Error:", err);
         return res.status(500).json({
             success: false,
             message: "Server error"
@@ -299,6 +432,12 @@ app.delete(
         )
     }
 )
+
+const cartRouteAdmin = require("./routes/admin/cartRouteAdmin");
+const feedbackRouteAdmin = require("./routes/admin/feedbackRouteAdmin");
+
+app.use("/api/admin/cart", cartRouteAdmin);
+app.use("/api/admin/feedback", feedbackRouteAdmin);
 
 module.exports=app
 

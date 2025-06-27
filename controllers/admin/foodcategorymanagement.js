@@ -1,4 +1,5 @@
 const Category = require('../../models/foodCategory');
+const { transformCategoryData } = require("../../utils/imageUtils");
 
 // Create a new category
 exports.createCategory = async (req, res) => {
@@ -128,5 +129,55 @@ exports.debugCategories = async (req, res) => {
     } catch (err) {
         console.error('Error in debug categories:', err);
         return res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
+exports.getCategories = async (req, res) => {
+    try {
+        const categories = await Category.find().sort({ name: 1 });
+
+        // Transform categories with full image URLs
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedCategories = categories.map(category => transformCategoryData(category, baseUrl));
+
+        return res.status(200).json({
+            success: true,
+            message: "Categories fetched successfully",
+            data: transformedCategories
+        });
+    } catch (err) {
+        console.error("Get Categories Error:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error"
+        });
+    }
+};
+
+exports.getOneCategory = async (req, res) => {
+    try {
+        const category = await Category.findById(req.params.id);
+        if (!category) {
+            return res.status(404).json({
+                success: false,
+                message: "Category not found"
+            });
+        }
+
+        // Transform category with full image URL
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedCategory = transformCategoryData(category, baseUrl);
+
+        return res.status(200).json({
+            success: true,
+            message: "Category fetched successfully",
+            data: transformedCategory
+        });
+    } catch (err) {
+        console.error("Get Category Error:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error"
+        });
     }
 };

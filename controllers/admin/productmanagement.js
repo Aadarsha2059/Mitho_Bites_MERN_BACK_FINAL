@@ -1,4 +1,6 @@
 const Product = require("../../models/Product");
+const mongoose = require('mongoose');
+const { transformProductData } = require("../../utils/imageUtils");
 
 exports.createProduct = async (req, res) => {
     console.log("Create Product Request Body:", req.body);
@@ -57,9 +59,9 @@ exports.createProduct = async (req, res) => {
         const product = new Product({
             name: name.trim(),
             price: numericPrice,
-            categoryId,
+            categoryId: new mongoose.Types.ObjectId(categoryId),
             type: normalizedType,
-            restaurantId,
+            restaurantId: new mongoose.Types.ObjectId(restaurantId),
             filepath,
             description: `${name} - Delicious ${type} food`
         });
@@ -122,8 +124,8 @@ exports.getProducts = async (req, res) => {
         }
 
         const products = await Product.find(filter)
-            .populate("categoryId", "name")
-            .populate("restaurantId", "name location")
+            .populate("categoryId", "name filepath")
+            .populate("restaurantId", "name location filepath")
             .populate("sellerId", "firstName email")
             .skip(skip)
             .limit(Number(limit))
@@ -131,10 +133,14 @@ exports.getProducts = async (req, res) => {
 
         const total = await Product.countDocuments(filter);
 
+        // Transform products with full image URLs
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedProducts = products.map(product => transformProductData(product, baseUrl));
+
         return res.status(200).json({
             success: true,
             message: "Products fetched",
-            data: products,
+            data: transformedProducts,
             pagination: {
                 total,
                 page: Number(page),
@@ -154,12 +160,17 @@ exports.getProducts = async (req, res) => {
 exports.getOneProduct = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id)
-            .populate("categoryId", "name")
-            .populate("restaurantId", "name location");
+            .populate("categoryId", "name filepath")
+            .populate("restaurantId", "name location filepath");
         if (!product) {
             return res.status(404).json({ success: false, message: "Product not found" });
         }
-        res.status(200).json({ success: true, data: product });
+
+        // Transform product with full image URLs
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedProduct = transformProductData(product, baseUrl);
+
+        res.status(200).json({ success: true, data: transformedProduct });
     } catch (err) {
         res.status(500).json({ success: false, message: "Server error" });
     }
