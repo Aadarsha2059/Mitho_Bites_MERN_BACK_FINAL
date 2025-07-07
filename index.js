@@ -22,6 +22,7 @@ const orderRoutes = require("./routes/orderRoutes")
 const Category = require("./models/foodCategory")
 const Restaurant = require("./models/Restaurant")
 const Product = require("./models/Product")
+const PaymentMethod = require("./models/paymentmethod")
 
 // Import utility functions
 const { transformProductData, transformCategoryData, transformRestaurantData } = require("./utils/imageUtils")
@@ -212,6 +213,79 @@ app.get("/api/products/:id", async (req, res) => {
         });
     } catch (err) {
         console.error("Get Product Error:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error"
+        });
+    }
+});
+
+app.get("/api/transactions", async (req, res) => {
+    try {
+        const { page = 1, limit = 10, search = "", paymentmode } = req.query;
+        const skip = (page - 1) * limit;
+
+        let filter = {};
+        
+        // Search filter
+        if (search) {
+            filter.$or = [
+                { food: { $regex: search, $options: "i" } },
+                { paymentmode: { $regex: search, $options: "i" } },
+                { orderId: { $regex: search, $options: "i" } }
+            ];
+        }
+
+        // Payment mode filter
+        if (paymentmode && paymentmode !== 'all') {
+            filter.paymentmode = paymentmode;
+        }
+
+        const transactions = await PaymentMethod.find(filter)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(Number(limit));
+
+        const total = await PaymentMethod.countDocuments(filter);
+
+        return res.status(200).json({
+            success: true,
+            message: "Transactions fetched successfully",
+            data: transactions,
+            pagination: {
+                total,
+                page: Number(page),
+                limit: Number(limit),
+                totalPages: Math.ceil(total / limit),
+            }
+        });
+    } catch (err) {
+        console.error("Get Transactions Error:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error"
+        });
+    }
+});
+
+app.get("/api/transactions/:id", async (req, res) => {
+    try {
+        const transaction = await PaymentMethod.findById(req.params.id);
+
+        if (!transaction) {
+            return res.status(404).json({
+                success: false,
+                message: "Transaction not found"
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Transaction fetched successfully",
+            data: transaction
+        });
+    } catch (err) {
+        console.error("Get Transaction Error:", err);
         return res.status(500).json({
             success: false,
             message: "Server error"

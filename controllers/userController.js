@@ -166,10 +166,8 @@ exports.sendResetLink = async (req, res) => {
     console.log('Password reset URL:', resetUrl);
     console.log('Reset token:', token);
 
-    // TODO: Uncomment this section when email is properly configured
-    /*
     // Configure email transporter
-    const transporter = nodemailer.createTransporter({
+    const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
         user: process.env.EMAIL_USER,
@@ -219,14 +217,6 @@ exports.sendResetLink = async (req, res) => {
         message: "If an account with this email exists, you will receive a password reset link." 
       });
     });
-    */
-
-    // For now, return success with the reset URL in the response (for testing)
-    return res.status(200).json({ 
-      success: true, 
-      message: "Password reset link generated successfully. Check console for the reset URL.",
-      resetUrl: resetUrl // Remove this in production
-    });
 
   } catch (err) {
     console.error('Server error:', err);
@@ -265,6 +255,46 @@ exports.resetPassword = async (req, res) => {
     return res.status(400).json({ 
       success: false, 
       message: "Invalid or expired token" 
+    });
+  }
+};
+
+// Get Current User (based on JWT token)
+exports.getCurrentUser = async (req, res) => {
+  try {
+    // The user is already attached to req by the authenticateUser middleware
+    const user = req.user;
+    
+    if (!user) {
+      return res.status(401).json({ 
+        success: false, 
+        message: "User not authenticated" 
+      });
+    }
+
+    // Return user data without sensitive information
+    const userData = {
+      _id: user._id,
+      fullname: user.fullname,
+      username: user.username,
+      email: user.email,
+      phone: user.phone,
+      address: user.address,
+      favorites: user.favorites,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    };
+
+    return res.status(200).json({
+      success: true,
+      message: "User data retrieved successfully",
+      data: userData
+    });
+  } catch (error) {
+    console.error('Get current user error:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: "Server error while retrieving user data" 
     });
   }
 };

@@ -4,6 +4,7 @@ const Product = require("../models/Product");
 const User = require("../models/User");
 const PaymentMethod = require("../models/paymentmethod");
 const { transformProductData } = require("../utils/imageUtils");
+const nodemailer = require("nodemailer");
 
 // Create order from cart
 exports.createOrder = async (req, res) => {
@@ -138,11 +139,13 @@ exports.createOrder = async (req, res) => {
         console.log("Order saved successfully, ID:", order._id);
 
         // Log payment data
+        let paymentmodeValue = order.paymentMethod;
+        if (paymentmodeValue === 'cash') paymentmodeValue = 'cod';
         const payment = new PaymentMethod({
             food: order.items.map(i => i.productName).join(", "),
             quantity: order.items.reduce((sum, i) => sum + i.quantity, 0),
             totalprice: order.totalAmount,
-            paymentmode: order.paymentMethod
+            paymentmode: paymentmodeValue
         });
         await payment.save();
 
@@ -156,6 +159,64 @@ exports.createOrder = async (req, res) => {
             path: 'items.productId',
             select: 'name price filepath'
         });
+
+        // Send order confirmation email
+        try {
+            const transporter = nodemailer.createTransport({
+                service: "gmail",
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS
+                }
+            });
+            const orderItemsHtml = orderItems.map(item => `
+                <tr>
+                    <td style='padding:8px;border:1px solid #eee;'>${item.productName}</td>
+                    <td style='padding:8px;border:1px solid #eee;'>${item.quantity}</td>
+                    <td style='padding:8px;border:1px solid #eee;'>${item.price}</td>
+                    <td style='padding:8px;border:1px solid #eee;'>${item.restaurantName}</td>
+                </tr>
+            `).join("");
+            const mailOptions = {
+                from: `"Mitho Bites" <${process.env.EMAIL_USER}>`,
+                to: user.email,
+                subject: "Order Confirmation - Mitho Bites",
+                html: `
+                    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                        <h2 style='color: #ff6600;'>Thank you for your order, ${user.fullname || user.username}!</h2>
+                        <p>Your order <b>#${order._id}</b> has been placed successfully.</p>
+                        <h3>Order Summary:</h3>
+                        <table style='width:100%;border-collapse:collapse;'>
+                            <thead>
+                                <tr style='background:#f7f7f7;'>
+                                    <th style='padding:8px;border:1px solid #eee;'>Product</th>
+                                    <th style='padding:8px;border:1px solid #eee;'>Qty</th>
+                                    <th style='padding:8px;border:1px solid #eee;'>Price</th>
+                                    <th style='padding:8px;border:1px solid #eee;'>Restaurant</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${orderItemsHtml}
+                            </tbody>
+                        </table>
+                        <p style='margin-top:16px;'><b>Total Amount:</b> NPR ${totalAmount}</p>
+                        <p><b>Delivery Address:</b> ${deliveryAddress.street}</p>
+                        <p><b>Estimated Delivery Time:</b> ${estimatedDeliveryTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                        <p style='margin-top:24px;'>If you have any questions, contact us at <a href='mailto:${process.env.EMAIL_USER}'>${process.env.EMAIL_USER}</a>.</p>
+                        <p style='color:#888;font-size:13px;'>Mitho Bites Nepal &copy; ${new Date().getFullYear()}</p>
+                    </div>
+                `
+            };
+            transporter.sendMail(mailOptions, (err, info) => {
+                if (err) {
+                    console.error('Order email error:', err);
+                } else {
+                    console.log('Order confirmation email sent:', info.response);
+                }
+            });
+        } catch (emailErr) {
+            console.error('Order confirmation email failed:', emailErr);
+        }
 
         console.log("=== Order Creation Completed Successfully ===");
         return res.status(201).json({
@@ -293,9 +354,11 @@ exports.getOrderById = async (req, res) => {
 // Cancel order
 exports.cancelOrder = async (req, res) => {
     try {
+        console.log(`[CANCEL ORDER] User: ${req.user._id}, Order: ${req.params.id}, Body:`, req.body);
+        // Ignore any request body
         const userId = req.user._id;
         const orderId = req.params.id;
-        const order = await Order.findOne({ _id: orderId, userId });
+        let order = await Order.findOne({ _id: orderId, userId });
         if (!order) {
             return res.status(404).json({ success: false, message: "Order not found" });
         }
@@ -305,10 +368,36 @@ exports.cancelOrder = async (req, res) => {
         }
         order.orderStatus = "cancelled";
         await order.save();
-        return res.status(200).json({ success: true, message: "Order cancelled successfully", data: order });
+        // Re-fetch with population and transform
+        order = await Order.findOne({ _id: orderId, userId })
+            .populate({
+                path: 'items.productId',
+                select: 'name price filepath description type',
+                populate: [
+                    { path: 'categoryId', select: 'name' },
+                    { path: 'restaurantId', select: 'name location' }
+                ]
+            });
+        // Transform product images in order items
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedOrder = order.toObject();
+        if (transformedOrder.items && Array.isArray(transformedOrder.items)) {
+            transformedOrder.items = transformedOrder.items.map(item => {
+                const transformedItem = { ...item };
+                if (item.productId && item.productId.filepath) {
+                    const cleanFilename = item.productId.filepath.replace(/^uploads\//, '');
+                    transformedItem.productId = {
+                        ...item.productId,
+                        image: `${baseUrl}/uploads/${cleanFilename}`
+                    };
+                }
+                return transformedItem;
+            });
+        }
+        return res.status(200).json({ success: true, message: "Order cancelled successfully", data: transformedOrder });
     } catch (err) {
         console.error("Cancel Order Error:", err);
-        return res.status(500).json({ success: false, message: "Server error" });
+        return res.status(500).json({ success: false, message: "Server error", error: err.message });
     }
 };
 
@@ -353,9 +442,11 @@ exports.updatePaymentStatus = async (req, res) => {
 // Mark order as received
 exports.markOrderReceived = async (req, res) => {
     try {
+        console.log(`[RECEIVE ORDER] User: ${req.user._id}, Order: ${req.params.id}, Body:`, req.body);
+        // Ignore any request body
         const userId = req.user._id;
         const orderId = req.params.id;
-        const order = await Order.findOne({ _id: orderId, userId });
+        let order = await Order.findOne({ _id: orderId, userId });
         if (!order) {
             return res.status(404).json({ success: false, message: "Order not found" });
         }
@@ -364,9 +455,35 @@ exports.markOrderReceived = async (req, res) => {
         }
         order.orderStatus = "received";
         await order.save();
-        return res.status(200).json({ success: true, message: "Order marked as received", data: order });
+        // Re-fetch with population and transform
+        order = await Order.findOne({ _id: orderId, userId })
+            .populate({
+                path: 'items.productId',
+                select: 'name price filepath description type',
+                populate: [
+                    { path: 'categoryId', select: 'name' },
+                    { path: 'restaurantId', select: 'name location' }
+                ]
+            });
+        // Transform product images in order items
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const transformedOrder = order.toObject();
+        if (transformedOrder.items && Array.isArray(transformedOrder.items)) {
+            transformedOrder.items = transformedOrder.items.map(item => {
+                const transformedItem = { ...item };
+                if (item.productId && item.productId.filepath) {
+                    const cleanFilename = item.productId.filepath.replace(/^uploads\//, '');
+                    transformedItem.productId = {
+                        ...item.productId,
+                        image: `${baseUrl}/uploads/${cleanFilename}`
+                    };
+                }
+                return transformedItem;
+            });
+        }
+        return res.status(200).json({ success: true, message: "Order marked as received", data: transformedOrder });
     } catch (err) {
         console.error("Mark Order Received Error:", err);
-        return res.status(500).json({ success: false, message: "Server error" });
+        return res.status(500).json({ success: false, message: "Server error", error: err.message });
     }
 }; 
