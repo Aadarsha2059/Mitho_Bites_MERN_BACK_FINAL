@@ -30,6 +30,7 @@ const { transformProductData, transformCategoryData, transformRestaurantData } =
 const path=require("path") 
 const cors = require("cors")
 const feedbackRoutes = require('./routes/feedbackRoutes')
+const dashboardRoutes = require('./routes/dashboardRoutes');
 
 const app=express() 
 app.use(cors())
@@ -55,6 +56,7 @@ app.use("/api/food", foodRoutes)
 app.use("/api/cart", cartRoutes)
 app.use("/api/orders", orderRoutes)
 app.use("/api/feedbacks", feedbackRoutes)
+app.use('/api/dashboard', dashboardRoutes);
 
 // Public endpoints for Flutter app
 app.get("/api/categories", async (req, res) => {

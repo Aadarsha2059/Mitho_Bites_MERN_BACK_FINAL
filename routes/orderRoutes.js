@@ -6,6 +6,9 @@ const { authenticateUser } = require("../middlewares/authorizedUser");
 // All order routes require authentication
 router.use(authenticateUser);
 
+// Get purchase trend for the last 7 days
+router.get('/trend', orderController.getPurchaseTrend);
+
 // Create order from cart
 router.post("/", orderController.createOrder);
 

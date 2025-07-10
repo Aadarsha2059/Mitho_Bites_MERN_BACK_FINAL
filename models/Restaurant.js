@@ -16,6 +16,6 @@ const restaurantSchema = new mongoose.Schema({
     filepath: {
         type: String 
     }
-});
+},{ timestamps: true });
 
 module.exports = mongoose.model('Restaurant', restaurantSchema);

@@ -5,6 +5,7 @@ const User = require("../models/User");
 const PaymentMethod = require("../models/paymentmethod");
 const { transformProductData } = require("../utils/imageUtils");
 const nodemailer = require("nodemailer");
+const mongoose = require("mongoose");
 
 // Create order from cart
 exports.createOrder = async (req, res) => {
@@ -481,9 +482,170 @@ exports.markOrderReceived = async (req, res) => {
                 return transformedItem;
             });
         }
+        // Send bill confirmation email
+        try {
+            const user = await User.findById(userId);
+            const transporter = nodemailer.createTransport({
+                service: "gmail",
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS
+                }
+            });
+            const orderItemsHtml = order.items.map((item, idx) => `
+                <tr>
+                    <td style='padding:8px 12px;border:1px solid #ddd;text-align:center;'>${idx + 1}</td>
+                    <td style='padding:8px 12px;border:1px solid #ddd;'>${item.productName || item.productId.name}</td>
+                    <td style='padding:8px 12px;border:1px solid #ddd;text-align:center;'>${item.quantity}</td>
+                    <td style='padding:8px 12px;border:1px solid #ddd;text-align:right;'>${item.price}</td>
+                    <td style='padding:8px 12px;border:1px solid #ddd;'>${item.restaurantName || (item.productId.restaurantId?.name || '')}</td>
+                </tr>
+            `).join("");
+            const restaurantName = order.items[0]?.restaurantName || order.items[0]?.productId?.restaurantId?.name || 'Unknown';
+            const orderDate = order.orderDate ? new Date(order.orderDate) : new Date();
+            const billHtml = `
+                <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:32px auto;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.08);overflow:hidden;">
+                    <div style="background:#ff6600;color:#fff;padding:24px 32px 12px 32px;text-align:center;">
+                        <h1 style="margin:0;font-size:2.2em;letter-spacing:1px;">Mitho Bites</h1>
+                        <div style="font-size:1.1em;opacity:0.95;">Order Bill / Receipt</div>
+                    </div>
+                    <div style="padding:24px 32px 8px 32px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                            <div style="font-size:1.1em;"><b>Bill To:</b> ${user.fullname || user.username}</div>
+                            <div style="font-size:1.1em;"><b>Order #</b> ${order._id}</div>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                            <div><b>Date:</b> ${orderDate.toLocaleDateString()}<br/><b>Time:</b> ${orderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                            <div><b>Delivery Address:</b> ${order.deliveryAddress?.street || ''}</div>
+                        </div>
+                        <table style="width:100%;border-collapse:collapse;margin-top:16px;font-size:1em;">
+                            <thead>
+                                <tr style="background:#f7f7f7;">
+                                    <th style='padding:8px 12px;border:1px solid #ddd;'>#</th>
+                                    <th style='padding:8px 12px;border:1px solid #ddd;'>Product</th>
+                                    <th style='padding:8px 12px;border:1px solid #ddd;'>Qty</th>
+                                    <th style='padding:8px 12px;border:1px solid #ddd;'>Price</th>
+                                    <th style='padding:8px 12px;border:1px solid #ddd;'>Restaurant</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${orderItemsHtml}
+                            </tbody>
+                        </table>
+                        <div style="display:flex;justify-content:flex-end;margin-top:18px;">
+                            <table style="min-width:260px;font-size:1.05em;">
+                                <tr>
+                                    <td style="padding:6px 0 6px 0;">Subtotal:</td>
+                                    <td style="padding:6px 0 6px 0;text-align:right;">NPR ${order.totalAmount}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:6px 0 6px 0;">Delivery Fee:</td>
+                                    <td style="padding:6px 0 6px 0;text-align:right;">NPR 0</td>
+                                </tr>
+                                <tr style="font-weight:bold;border-top:2px solid #eee;">
+                                    <td style="padding:8px 0 8px 0;">Total:</td>
+                                    <td style="padding:8px 0 8px 0;text-align:right;">NPR ${order.totalAmount}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div style="margin-top:24px;font-size:1.05em;">
+                            <b>Payment Method:</b> ${order.paymentMethod ? order.paymentMethod.toUpperCase() : 'N/A'}
+                        </div>
+                        <div style="margin-top:8px;font-size:1.05em;">
+                            <b>Order Status:</b> ${order.orderStatus ? order.orderStatus.toUpperCase() : 'N/A'}
+                        </div>
+                        <div style="margin-top:32px;display:flex;justify-content:space-between;align-items:flex-end;">
+                            <div style='font-size:13px;color:#888;'>Checkout by: <b>system super admin Aadarsha Babu Dhakal</b></div>
+                            <div style='font-size:13px;color:#888;'>Receiver name: <b>${restaurantName}</b></div>
+                        </div>
+                        <div style="margin-top:32px;text-align:center;color:#aaa;font-size:0.98em;">
+                            Thank you for choosing Mitho Bites!<br/>
+                            <span style="font-size:0.95em;">For support, contact <a href='mailto:${process.env.EMAIL_USER}' style='color:#ff6600;text-decoration:none;'>${process.env.EMAIL_USER}</a></span><br/>
+                            <span style="font-size:0.95em;">&copy; ${new Date().getFullYear()} Mitho Bites Nepal</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            const mailOptions = {
+                from: `"Mitho Bites" <${process.env.EMAIL_USER}>`,
+                to: user.email,
+                subject: "Bill Confirmation - Mitho Bites",
+                html: billHtml
+            };
+            transporter.sendMail(mailOptions, (err, info) => {
+                if (err) {
+                    console.error('Bill email error:', err);
+                } else {
+                    console.log('Bill confirmation email sent:', info.response);
+                }
+            });
+        } catch (emailErr) {
+            console.error('Bill confirmation email failed:', emailErr);
+        }
         return res.status(200).json({ success: true, message: "Order marked as received", data: transformedOrder });
     } catch (err) {
         console.error("Mark Order Received Error:", err);
         return res.status(500).json({ success: false, message: "Server error", error: err.message });
+    }
+}; 
+
+// Get purchase trend for the last 7 days
+exports.getPurchaseTrend = async (req, res) => {
+    try {
+        const userId = req.query.userId || req.user?._id;
+        if (!userId) {
+            return res.status(400).json({ success: false, message: 'User ID is required' });
+        }
+        // Calculate date 7 days ago
+        const today = new Date();
+        const startDate = new Date(today);
+        startDate.setDate(today.getDate() - 6); // includes today
+        startDate.setHours(0, 0, 0, 0);
+
+        // Aggregate orders by day (only received orders)
+        const trend = await Order.aggregate([
+            { $match: {
+                userId: new mongoose.Types.ObjectId(userId),
+                orderDate: { $gte: startDate },
+                orderStatus: 'received'
+            }},
+            { $unwind: "$items" },
+            { $group: {
+                _id: { $dateToString: { format: "%Y-%m-%d", date: "$orderDate" } },
+                orderCount: { $addToSet: "$_id" }, // unique order IDs per day
+                totalAmount: { $sum: "$totalAmount" },
+                itemsReceived: { $sum: "$items.quantity" }
+            }},
+            { $project: {
+                _id: 1,
+                orderCount: { $size: "$orderCount" },
+                totalAmount: 1,
+                itemsReceived: 1
+            }},
+            { $sort: { _id: 1 } }
+        ]);
+
+        // Fill missing days with zeroes
+        const result = [];
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + i);
+            const dateStr = date.toISOString().slice(0, 10);
+            const dayData = trend.find(t => t._id === dateStr);
+            result.push({
+                date: dateStr,
+                orderCount: dayData ? dayData.orderCount : 0,
+                totalAmount: dayData ? dayData.totalAmount : 0,
+                itemsReceived: dayData ? dayData.itemsReceived : 0
+            });
+        }
+        // Ensure present day is at the end (oldest to newest)
+        // (Already constructed in order: 6 days ago ... today)
+        // But if not, sort just in case
+        result.sort((a, b) => a.date.localeCompare(b.date));
+        return res.json({ success: true, data: result });
+    } catch (err) {
+        console.error('Error in getPurchaseTrend:', err);
+        return res.status(500).json({ success: false, message: 'Server error' });
     }
 }; 
