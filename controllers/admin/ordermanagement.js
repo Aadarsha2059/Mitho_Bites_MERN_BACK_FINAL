@@ -77,3 +77,25 @@ exports.getOrders = async (req, res) => {
         });
     }
 };
+
+exports.getOrderById = async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: "Order not found"
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            message: "Order fetched successfully",
+            data: order
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: "Server error"
+        });
+    }
+};

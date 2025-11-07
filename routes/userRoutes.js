@@ -1,26 +1,57 @@
+// 
+
+
 const express = require("express");
 const router = express.Router();
 const { registerUser, loginUser, updateUser, sendResetLink, resetPassword, getCurrentUser } = require("../controllers/userController");
 const validateUser = require("../middlewares/validateUser");
 const { authenticateUser } = require("../middlewares/authorizedUser");
+const passport = require('passport');
+const jwt = require('jsonwebtoken');
+// Import security middleware
+const { sanitizeNoSQL, sanitizeCommands, sanitizeXSS, csrfProtection, validateJWT } = require("../middlewares/securityMiddleware");
 
-// Register new user with validation
-router.post("/register", validateUser, registerUser);
+// ==========================================
+// SECURITY MIDDLEWARE APPLICATION
+// ==========================================
 
-// Login user 
-router.post("/login", loginUser);
+// Register new user with validation and security
+router.post("/register", sanitizeNoSQL, sanitizeCommands, sanitizeXSS, validateUser, registerUser);
+
+// Login user with security
+router.post("/login", sanitizeNoSQL, sanitizeCommands, sanitizeXSS, loginUser);
 
 // Get current user (protected route)
 router.get("/me", authenticateUser, getCurrentUser);
 
-// Update user info with validation
+// Update user info with validation and security
 // Assuming you use :id to identify which user to update
-router.put("/update/:id", validateUser, updateUser);
+router.put("/update/:id", authenticateUser, sanitizeNoSQL, sanitizeCommands, sanitizeXSS, updateUser);
 
-// Forgot password - send reset link
-router.post("/forgot-password", sendResetLink);
+// Forgot password - send reset link with security
+router.post("/forgot-password", sanitizeNoSQL, sanitizeCommands, sanitizeXSS, sendResetLink);
 
-// Reset password with token
-router.post("/reset-password/:token", resetPassword);
+// Reset password with token and security
+router.post("/reset-password/:token", sanitizeNoSQL, sanitizeCommands, sanitizeXSS, resetPassword);
+
+// Google OAuth (external provider, less risk but still apply basic sanitization)
+router.get('/auth/google', sanitizeNoSQL, sanitizeXSS, passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+router.get('/auth/google/callback', sanitizeNoSQL, sanitizeXSS, passport.authenticate('google', { failureRedirect: '/login', session: false }), (req, res) => {
+  // Issue JWT and redirect to frontend
+  const token = jwt.sign({ id: req.user._id }, process.env.SECRET, { expiresIn: '7d' });
+  // Redirect to frontend with token as query param
+  res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login/success?token=${token}`);
+});
+
+// Facebook OAuth (external provider, less risk but still apply basic sanitization)
+router.get('/auth/facebook', sanitizeNoSQL, sanitizeXSS, passport.authenticate('facebook', { scope: ['email'] }));
+
+router.get('/auth/facebook/callback', sanitizeNoSQL, sanitizeXSS, passport.authenticate('facebook', { failureRedirect: '/login', session: false }), (req, res) => {
+  // Issue JWT and redirect to frontend
+  const token = jwt.sign({ id: req.user._id }, process.env.SECRET, { expiresIn: '7d' });
+  // Redirect to frontend with token as query param
+  res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login/success?token=${token}`);
+});
 
 module.exports = router;

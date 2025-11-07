@@ -140,6 +140,16 @@ describe("User Authentication API", () => {
     expect(res.body.success).toBe(false);
     expect(res.body.message).toMatch(/invalid/i);
   });
+
+  test("should fail login with non-existent user", async () => {
+    const res = await request(app).post("/api/auth/login").send({
+      username: "nonexistentuser_xyz",
+      password: "somepassword",
+    });
+    expect(res.statusCode).toBe(403);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toMatch(/invalid|not found/i);
+  });
 });
 
 describe("Admin User Management Routes", () => {
@@ -217,5 +227,12 @@ describe("Admin User Management Routes", () => {
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.message).toBe("User deleted successfully");
+  });
+
+  test("should fail to get users list without admin token", async () => {
+    const res = await request(app).get("/api/admin/users");
+    expect(res.statusCode).toBe(403);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toMatch(/token required|access denied/i);
   });
 });

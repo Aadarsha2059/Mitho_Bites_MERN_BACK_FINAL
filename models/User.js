@@ -34,6 +34,19 @@ const UserSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Product'
     }],
+    googleId: {
+      type: String,
+      default: null
+    },
+    facebookId: {
+      type: String,
+      default: null
+    },
+    provider: {
+      type: String,
+      enum: ['local', 'google', 'facebook'],
+      default: 'local'
+    },
     // confirmpassword:{
     //     type:String,
     //     required:true,

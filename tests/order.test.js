@@ -88,4 +88,20 @@ describe("Order API", () => {
     expect(res.body.pagination.page).toBe(1);
     expect(res.body.pagination.limit).toBe(5);
   });
+
+  test("should return empty array for order search with no results", async () => {
+    const res = await request(app).get("/api/admin/order").query({ search: "no_such_order_12345" });
+    expect(res.statusCode).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(res.body.data.length).toBe(0);
+  });
+
+  test("should return 404 for non-existent order id", async () => {
+    const fakeId = new mongoose.Types.ObjectId();
+    const res = await request(app).get(`/api/admin/order/${fakeId}`);
+    expect(res.statusCode).toBe(404);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toMatch(/not found/i);
+  });
 });

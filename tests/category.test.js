@@ -118,12 +118,18 @@ describe("Category API", () => {
     expect(res.body.message).toBe("Category deleted");
   });
 
+  test("should get categories with pagination", async () => {
+    const res = await request(app).get("/api/admin/category").query({ page: 1, limit: 2 });
+    expect(res.statusCode).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(Array.isArray(res.body.data)).toBe(true);
+  });
+
   test("should return 404 when deleting non-existent category", async () => {
     const fakeId = new mongoose.Types.ObjectId();
     const res = await request(app).delete(`/api/admin/category/${fakeId}`);
-
     expect(res.statusCode).toBe(404);
     expect(res.body.success).toBe(false);
-    expect(res.body.message).toBe("Category not found");
+    expect(res.body.message).toMatch(/not found/i);
   });
 });

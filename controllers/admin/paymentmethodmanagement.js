@@ -32,6 +32,7 @@ exports.createPaymentMethod = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Server error",
+            error: err.message,
         });
     }
 };
@@ -113,6 +114,7 @@ exports.getPaymentMethods = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Server error",
+            error: err.message,
         });
     }
 };
@@ -136,6 +138,7 @@ exports.getOnePaymentMethod = async (req, res) => {
             data: payment,
         });
     } catch (err) {
+        console.error("Get One PaymentMethod Error:", err);
         return res.status(500).json({
             success: false,
             message: "Server error",
@@ -148,6 +151,13 @@ exports.getOnePaymentMethod = async (req, res) => {
 exports.updatePaymentMethod = async (req, res) => {
     const { id } = req.params;
     const { food, quantity, totalprice, paymentmode, status, customerInfo } = req.body;
+
+    if (!food || !quantity || !totalprice || !paymentmode) {
+        return res.status(403).json({
+            success: false,
+            message: "Missing required fields",
+        });
+    }
 
     try {
         const updateData = {
@@ -181,6 +191,7 @@ exports.updatePaymentMethod = async (req, res) => {
             data: updatedPayment,
         });
     } catch (err) {
+        console.error("Update PaymentMethod Error:", err);
         return res.status(500).json({
             success: false,
             message: "Server error",
@@ -207,6 +218,7 @@ exports.deletePaymentMethod = async (req, res) => {
             message: "Payment method deleted successfully",
         });
     } catch (err) {
+        console.error("Delete PaymentMethod Error:", err);
         return res.status(500).json({
             success: false,
             message: "Server error",

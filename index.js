@@ -31,11 +31,23 @@ const path=require("path")
 const cors = require("cors")
 const feedbackRoutes = require('./routes/feedbackRoutes')
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const session = require('express-session');
+const passport = require('passport');
+require('./passport')(passport);
 
 const app=express() 
 app.use(cors())
 app.use(express.json()) //accept join in request
 app.use("/uploads",express.static(path.join(__dirname,"uploads")))
+
+// Add session and passport middleware
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'mithobites_secret',
+  resave: false,
+  saveUninitialized: false
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 
 //2 new implementations
 connectDB()

@@ -113,11 +113,15 @@ exports.createOrder = async (req, res) => {
             };
         });
 
-        // Calculate total amount
-        const totalAmount = orderItems.reduce((total, item) => {
+        // Calculate subtotal
+        const subtotal = orderItems.reduce((total, item) => {
             return total + (item.price * item.quantity);
         }, 0);
-        console.log("Total amount calculated:", totalAmount);
+        // Calculate delivery fee and tax
+        const deliveryFee = subtotal > 500 ? 0 : 49;
+        const tax = Math.round(subtotal * 0.05);
+        const totalAmount = subtotal + deliveryFee + tax;
+        console.log("Subtotal:", subtotal, "Delivery Fee:", deliveryFee, "Tax:", tax, "Total:", totalAmount);
 
         // Calculate estimated delivery time (30-45 minutes from now)
         const estimatedDeliveryTime = new Date();
@@ -128,6 +132,9 @@ exports.createOrder = async (req, res) => {
         const order = new Order({
             userId,
             items: orderItems,
+            subtotal,
+            deliveryFee,
+            tax,
             totalAmount,
             deliveryAddress,
             deliveryInstructions,
@@ -178,35 +185,73 @@ exports.createOrder = async (req, res) => {
                     <td style='padding:8px;border:1px solid #eee;'>${item.restaurantName}</td>
                 </tr>
             `).join("");
+            // Format currency helper
+            const formatNPR = (amount) => `NPR ${Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            // Order confirmation email (same style as bill)
+            const orderConfirmationHtml = `
+                <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:650px;margin:32px auto;background:#fff;border-radius:18px;box-shadow:0 6px 32px #5a3fd733,0 2px 12px #2d1e5f22;overflow:hidden;">
+                    <div style="background:linear-gradient(90deg,#5a3fd7 0%,#7c5dfa 60%,#ffb347 100%);color:#fff;padding:32px 40px 18px 40px;text-align:center;">
+                        <h1 style="margin:0;font-size:2.3em;letter-spacing:1.2px;font-weight:900;text-shadow:0 2px 12px #4c51bf33;">Mitho Bites</h1>
+                        <div style="font-size:1.18em;opacity:0.97;font-weight:600;letter-spacing:0.5px;">Order Confirmation</div>
+                    </div>
+                    <div style="padding:32px 40px 18px 40px;">
+                        <div style="font-size:1.25em;font-weight:700;margin-bottom:18px;">Thank you for your order, ${user.fullname || user.username}!</div>
+                        <div style="font-size:1.13em;font-weight:600;margin-bottom:10px;">Your order <b>#${order._id}</b> has been placed successfully.</div>
+                        <h3 style="margin:18px 0 10px 0;font-size:1.18em;color:#5a3fd7;letter-spacing:0.5px;">Order Summary:</h3>
+                        <table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:1.08em;box-shadow:0 2px 8px #5a3fd71a;">
+                            <thead>
+                                <tr style="background:linear-gradient(90deg,#5a3fd7 0%,#7c5dfa 100%);color:#fff;">
+                                    <th style='padding:10px 12px;border:1px solid #e9eaf3;'>Product</th>
+                                    <th style='padding:10px 12px;border:1px solid #e9eaf3;'>Qty</th>
+                                    <th style='padding:10px 12px;border:1px solid #e9eaf3;'>Price</th>
+                                    <th style='padding:10px 12px;border:1px solid #e9eaf3;'>Restaurant</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${order.items.map(item => `
+                                    <tr style="background:#f4f6fb;">
+                                        <td style="padding:10px 12px;border:1px solid #e9eaf3;">${item.productName || item.productId?.name}</td>
+                                        <td style="padding:10px 12px;border:1px solid #e9eaf3;text-align:center;">${item.quantity}</td>
+                                        <td style="padding:10px 12px;border:1px solid #e9eaf3;text-align:right;">${formatNPR(item.price)}</td>
+                                        <td style="padding:10px 12px;border:1px solid #e9eaf3;">${item.restaurantName || item.productId?.restaurantId?.name || ''}</td>
+                                    </tr>
+                                `).join("")}
+                            </tbody>
+                        </table>
+                        <div style="display:flex;justify-content:flex-end;margin-top:22px;">
+                            <table style="min-width:320px;font-size:1.13em;">
+                                <tr>
+                                    <td style="padding:8px 0 8px 0;">Subtotal:</td>
+                                    <td style="padding:8px 0 8px 0;text-align:right;">${formatNPR(order.subtotal)}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px 0 8px 0;">Delivery Fee:</td>
+                                    <td style="padding:8px 0 8px 0;text-align:right;">${formatNPR(order.deliveryFee)}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px 0 8px 0;">Tax (5%):</td>
+                                    <td style="padding:8px 0 8px 0;text-align:right;">${formatNPR(order.tax)}</td>
+                                </tr>
+                                <tr style="font-weight:bold;border-top:2px solid #e9eaf3;">
+                                    <td style="padding:12px 0 12px 0;font-size:1.15em;">Total:</td>
+                                    <td style="padding:12px 0 12px 0;text-align:right;font-size:1.15em;">${formatNPR(order.totalAmount)}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div style="margin-top:18px;font-size:1.13em;"><b>Delivery Address:</b> ${order.deliveryAddress?.street || ''}</div>
+                        <div style="margin-top:8px;font-size:1.13em;"><b>Estimated Delivery Time:</b> ${order.estimatedDeliveryTime ? new Date(order.estimatedDeliveryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</div>
+                        <div style="margin-top:32px;text-align:center;color:#5a3fd7;font-size:1.08em;font-weight:600;">
+                            If you have any questions, contact us at <a href='mailto:${process.env.EMAIL_USER}' style='color:#ffb347;text-decoration:none;'>${process.env.EMAIL_USER}</a>.<br/>
+                            <span style="font-size:0.98em;color:#888;font-weight:400;">&copy; ${new Date().getFullYear()} Mitho Bites Nepal</span>
+                        </div>
+                    </div>
+                </div>
+            `;
             const mailOptions = {
                 from: `"Mitho Bites" <${process.env.EMAIL_USER}>`,
                 to: user.email,
                 subject: "Order Confirmation - Mitho Bites",
-                html: `
-                    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-                        <h2 style='color: #ff6600;'>Thank you for your order, ${user.fullname || user.username}!</h2>
-                        <p>Your order <b>#${order._id}</b> has been placed successfully.</p>
-                        <h3>Order Summary:</h3>
-                        <table style='width:100%;border-collapse:collapse;'>
-                            <thead>
-                                <tr style='background:#f7f7f7;'>
-                                    <th style='padding:8px;border:1px solid #eee;'>Product</th>
-                                    <th style='padding:8px;border:1px solid #eee;'>Qty</th>
-                                    <th style='padding:8px;border:1px solid #eee;'>Price</th>
-                                    <th style='padding:8px;border:1px solid #eee;'>Restaurant</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${orderItemsHtml}
-                            </tbody>
-                        </table>
-                        <p style='margin-top:16px;'><b>Total Amount:</b> NPR ${totalAmount}</p>
-                        <p><b>Delivery Address:</b> ${deliveryAddress.street}</p>
-                        <p><b>Estimated Delivery Time:</b> ${estimatedDeliveryTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                        <p style='margin-top:24px;'>If you have any questions, contact us at <a href='mailto:${process.env.EMAIL_USER}'>${process.env.EMAIL_USER}</a>.</p>
-                        <p style='color:#888;font-size:13px;'>Mitho Bites Nepal &copy; ${new Date().getFullYear()}</p>
-                    </div>
-                `
+                html: orderConfirmationHtml
             };
             transporter.sendMail(mailOptions, (err, info) => {
                 if (err) {
@@ -492,76 +537,90 @@ exports.markOrderReceived = async (req, res) => {
                     pass: process.env.EMAIL_PASS
                 }
             });
+            // Format currency helper
+            const formatNPR = (amount) => `NPR ${Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             const orderItemsHtml = order.items.map((item, idx) => `
                 <tr>
                     <td style='padding:8px 12px;border:1px solid #ddd;text-align:center;'>${idx + 1}</td>
                     <td style='padding:8px 12px;border:1px solid #ddd;'>${item.productName || item.productId.name}</td>
                     <td style='padding:8px 12px;border:1px solid #ddd;text-align:center;'>${item.quantity}</td>
-                    <td style='padding:8px 12px;border:1px solid #ddd;text-align:right;'>${item.price}</td>
+                    <td style='padding:8px 12px;border:1px solid #ddd;text-align:right;'>${formatNPR(item.price)}</td>
                     <td style='padding:8px 12px;border:1px solid #ddd;'>${item.restaurantName || (item.productId.restaurantId?.name || '')}</td>
                 </tr>
             `).join("");
             const restaurantName = order.items[0]?.restaurantName || order.items[0]?.productId?.restaurantId?.name || 'Unknown';
             const orderDate = order.orderDate ? new Date(order.orderDate) : new Date();
             const billHtml = `
-                <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:32px auto;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.08);overflow:hidden;">
-                    <div style="background:#ff6600;color:#fff;padding:24px 32px 12px 32px;text-align:center;">
-                        <h1 style="margin:0;font-size:2.2em;letter-spacing:1px;">Mitho Bites</h1>
-                        <div style="font-size:1.1em;opacity:0.95;">Order Bill / Receipt</div>
+                <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:650px;margin:32px auto;background:#fff;border-radius:18px;box-shadow:0 6px 32px #5a3fd733,0 2px 12px #2d1e5f22;overflow:hidden;">
+                    <div style="background:linear-gradient(90deg,#5a3fd7 0%,#7c5dfa 60%,#ffb347 100%);color:#fff;padding:32px 40px 18px 40px;text-align:center;">
+                        <h1 style="margin:0;font-size:2.3em;letter-spacing:1.2px;font-weight:900;text-shadow:0 2px 12px #4c51bf33;">Mitho Bites</h1>
+                        <div style="font-size:1.18em;opacity:0.97;font-weight:600;letter-spacing:0.5px;">Order Bill / Receipt</div>
                     </div>
-                    <div style="padding:24px 32px 8px 32px;">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                            <div style="font-size:1.1em;"><b>Bill To:</b> ${user.fullname || user.username}</div>
-                            <div style="font-size:1.1em;"><b>Order #</b> ${order._id}</div>
-                        </div>
+                    <div style="padding:32px 40px 18px 40px;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                            <div style="font-size:1.13em;font-weight:600;"><b>Bill To:</b> ${user.fullname || user.username}</div>
+                            <div style="font-size:1.13em;font-weight:600;"><b>Order #</b> ${order._id}</div>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
                             <div><b>Date:</b> ${orderDate.toLocaleDateString()}<br/><b>Time:</b> ${orderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                             <div><b>Delivery Address:</b> ${order.deliveryAddress?.street || ''}</div>
                         </div>
-                        <table style="width:100%;border-collapse:collapse;margin-top:16px;font-size:1em;">
+                        <table style="width:100%;border-collapse:collapse;margin-top:18px;font-size:1.08em;box-shadow:0 2px 8px #5a3fd71a;">
                             <thead>
-                                <tr style="background:#f7f7f7;">
-                                    <th style='padding:8px 12px;border:1px solid #ddd;'>#</th>
-                                    <th style='padding:8px 12px;border:1px solid #ddd;'>Product</th>
-                                    <th style='padding:8px 12px;border:1px solid #ddd;'>Qty</th>
-                                    <th style='padding:8px 12px;border:1px solid #ddd;'>Price</th>
-                                    <th style='padding:8px 12px;border:1px solid #ddd;'>Restaurant</th>
+                                <tr style="background:linear-gradient(90deg,#5a3fd7 0%,#7c5dfa 100%);color:#fff;">
+                                    <th style='padding:10px 12px;border:1px solid #e9eaf3;'>#</th>
+                                    <th style='padding:10px 12px;border:1px solid #e9eaf3;'>Product</th>
+                                    <th style='padding:10px 12px;border:1px solid #e9eaf3;'>Qty</th>
+                                    <th style='padding:10px 12px;border:1px solid #e9eaf3;'>Price</th>
+                                    <th style='padding:10px 12px;border:1px solid #e9eaf3;'>Restaurant</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                ${orderItemsHtml}
+                                ${order.items.map((item, idx) => `
+                                    <tr style="background:${idx%2===0?'#f4f6fb':'#fff'};">
+                                        <td style="padding:10px 12px;border:1px solid #e9eaf3;text-align:center;">${idx + 1}</td>
+                                        <td style="padding:10px 12px;border:1px solid #e9eaf3;">${item.productName || item.productId?.name}</td>
+                                        <td style="padding:10px 12px;border:1px solid #e9eaf3;text-align:center;">${item.quantity}</td>
+                                        <td style="padding:10px 12px;border:1px solid #e9eaf3;text-align:right;">${formatNPR(item.price)}</td>
+                                        <td style="padding:10px 12px;border:1px solid #e9eaf3;">${item.restaurantName || item.productId?.restaurantId?.name || ''}</td>
+                                    </tr>
+                                `).join("")}
                             </tbody>
                         </table>
-                        <div style="display:flex;justify-content:flex-end;margin-top:18px;">
-                            <table style="min-width:260px;font-size:1.05em;">
+                        <div style="display:flex;justify-content:flex-end;margin-top:22px;">
+                            <table style="min-width:320px;font-size:1.13em;">
                                 <tr>
-                                    <td style="padding:6px 0 6px 0;">Subtotal:</td>
-                                    <td style="padding:6px 0 6px 0;text-align:right;">NPR ${order.totalAmount}</td>
+                                    <td style="padding:8px 0 8px 0;">Subtotal:</td>
+                                    <td style="padding:8px 0 8px 0;text-align:right;">${formatNPR(order.subtotal)}</td>
                                 </tr>
                                 <tr>
-                                    <td style="padding:6px 0 6px 0;">Delivery Fee:</td>
-                                    <td style="padding:6px 0 6px 0;text-align:right;">NPR 0</td>
+                                    <td style="padding:8px 0 8px 0;">Delivery Fee:</td>
+                                    <td style="padding:8px 0 8px 0;text-align:right;">${formatNPR(order.deliveryFee)}</td>
                                 </tr>
-                                <tr style="font-weight:bold;border-top:2px solid #eee;">
-                                    <td style="padding:8px 0 8px 0;">Total:</td>
-                                    <td style="padding:8px 0 8px 0;text-align:right;">NPR ${order.totalAmount}</td>
+                                <tr>
+                                    <td style="padding:8px 0 8px 0;">Tax (5%):</td>
+                                    <td style="padding:8px 0 8px 0;text-align:right;">${formatNPR(order.tax)}</td>
+                                </tr>
+                                <tr style="font-weight:bold;border-top:2px solid #e9eaf3;">
+                                    <td style="padding:12px 0 12px 0;font-size:1.15em;">Total:</td>
+                                    <td style="padding:12px 0 12px 0;text-align:right;font-size:1.15em;">${formatNPR(order.totalAmount)}</td>
                                 </tr>
                             </table>
                         </div>
-                        <div style="margin-top:24px;font-size:1.05em;">
-                            <b>Payment Method:</b> ${order.paymentMethod ? order.paymentMethod.toUpperCase() : 'N/A'}
+                        <div style="margin-top:28px;font-size:1.13em;">
+                            <b>Payment Method:</b> <span style="color:#5a3fd7;">${order.paymentMethod ? order.paymentMethod.toUpperCase() : 'N/A'}</span>
                         </div>
-                        <div style="margin-top:8px;font-size:1.05em;">
-                            <b>Order Status:</b> ${order.orderStatus ? order.orderStatus.toUpperCase() : 'N/A'}
+                        <div style="margin-top:8px;font-size:1.13em;">
+                            <b>Order Status:</b> <span style="color:#ffb347;">${order.orderStatus ? order.orderStatus.toUpperCase() : 'N/A'}</span>
                         </div>
                         <div style="margin-top:32px;display:flex;justify-content:space-between;align-items:flex-end;">
                             <div style='font-size:13px;color:#888;'>Checkout by: <b>system super admin Aadarsha Babu Dhakal</b></div>
                             <div style='font-size:13px;color:#888;'>Receiver name: <b>${restaurantName}</b></div>
                         </div>
-                        <div style="margin-top:32px;text-align:center;color:#aaa;font-size:0.98em;">
+                        <div style="margin-top:32px;text-align:center;color:#5a3fd7;font-size:1.08em;font-weight:600;">
                             Thank you for choosing Mitho Bites!<br/>
-                            <span style="font-size:0.95em;">For support, contact <a href='mailto:${process.env.EMAIL_USER}' style='color:#ff6600;text-decoration:none;'>${process.env.EMAIL_USER}</a></span><br/>
-                            <span style="font-size:0.95em;">&copy; ${new Date().getFullYear()} Mitho Bites Nepal</span>
+                            <span style="font-size:0.98em;color:#888;font-weight:400;">For support, contact <a href='mailto:${process.env.EMAIL_USER}' style='color:#ffb347;text-decoration:none;'>${process.env.EMAIL_USER}</a></span><br/>
+                            <span style="font-size:0.98em;color:#888;font-weight:400;">&copy; ${new Date().getFullYear()} Mitho Bites Nepal</span>
                         </div>
                     </div>
                 </div>
@@ -643,7 +702,7 @@ exports.getPurchaseTrend = async (req, res) => {
         // (Already constructed in order: 6 days ago ... today)
         // But if not, sort just in case
         result.sort((a, b) => a.date.localeCompare(b.date));
-        return res.json({ success: true, data: result });
+        return res.json({ success: true, data: result, yAxisMax: 10 });
     } catch (err) {
         console.error('Error in getPurchaseTrend:', err);
         return res.status(500).json({ success: false, message: 'Server error' });

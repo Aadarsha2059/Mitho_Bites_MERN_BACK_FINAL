@@ -119,4 +119,20 @@ describe("Product API", () => {
     expect(res.body.success).toBe(true);
     expect(Array.isArray(res.body.data)).toBe(true);
   });
+
+  test("should return 404 for non-existent product id", async () => {
+    const fakeId = new mongoose.Types.ObjectId();
+    const res = await request(app).get(`/api/admin/product/${fakeId}`);
+    expect(res.statusCode).toBe(404);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toMatch(/not found/i);
+  });
+
+  test("should return empty array for search with no results", async () => {
+    const res = await request(app).get("/api/admin/product").query({ search: "no_such_product_12345" });
+    expect(res.statusCode).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(res.body.data.length).toBe(0);
+  });
 });
