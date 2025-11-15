@@ -3,7 +3,7 @@
 
 const express = require("express");
 const router = express.Router();
-const { registerUser, loginUser, updateUser, sendResetLink, resetPassword, getCurrentUser } = require("../controllers/userController");
+const { registerUser, loginUser, verifyOTP, updateUser, sendResetLink, resetPassword, getCurrentUser, changePassword } = require("../controllers/userController");
 const validateUser = require("../middlewares/validateUser");
 const { authenticateUser } = require("../middlewares/authorizedUser");
 const passport = require('passport');
@@ -18,8 +18,11 @@ const { sanitizeNoSQL, sanitizeCommands, sanitizeXSS, csrfProtection, validateJW
 // Register new user with validation and security
 router.post("/register", sanitizeNoSQL, sanitizeCommands, sanitizeXSS, validateUser, registerUser);
 
-// Login user with security
+// Login user with security (Step 1: Send OTP)
 router.post("/login", sanitizeNoSQL, sanitizeCommands, sanitizeXSS, loginUser);
+
+// Verify OTP and complete login (Step 2)
+router.post("/verify-otp", sanitizeNoSQL, sanitizeCommands, sanitizeXSS, verifyOTP);
 
 // Get current user (protected route)
 router.get("/me", authenticateUser, getCurrentUser);
@@ -33,6 +36,9 @@ router.post("/forgot-password", sanitizeNoSQL, sanitizeCommands, sanitizeXSS, se
 
 // Reset password with token and security
 router.post("/reset-password/:token", sanitizeNoSQL, sanitizeCommands, sanitizeXSS, resetPassword);
+
+// Change password (for logged-in users with old password verification)
+router.post("/change-password", authenticateUser, sanitizeNoSQL, sanitizeCommands, sanitizeXSS, changePassword);
 
 // Google OAuth (external provider, less risk but still apply basic sanitization)
 router.get('/auth/google', sanitizeNoSQL, sanitizeXSS, passport.authenticate('google', { scope: ['profile', 'email'] }));

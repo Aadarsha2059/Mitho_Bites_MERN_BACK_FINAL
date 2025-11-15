@@ -47,6 +47,19 @@ const UserSchema = new mongoose.Schema(
       enum: ['local', 'google', 'facebook'],
       default: 'local'
     },
+    // 2FA OTP fields
+    otp: {
+      type: String,
+      default: null
+    },
+    otpExpiry: {
+      type: Date,
+      default: null
+    },
+    otpVerified: {
+      type: Boolean,
+      default: false
+    },
     // confirmpassword:{
     //     type:String,
     //     required:true,
