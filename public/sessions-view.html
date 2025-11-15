@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Management - BHOKBHOJ</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .stat-card h3 { color: #666; font-size: 0.9em; margin-bottom: 10px; text-transform: uppercase; }
+        .stat-card .value { font-size: 2.5em; font-weight: bold; color: #667eea; }
+        .section { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 30px; }
+        .section h2 { color: #333; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .session-card { background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 15px; }
+        .session-card.current { border-color: #48bb78; background: #f0fff4; }
+        .session-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .device-info { display: flex; align-items: center; gap: 15px; }
+        .device-icon { font-size: 2.5em; }
+        .device-details h3 { color: #333; margin-bottom: 5px; }
+        .device-details p { color: #666; font-size: 0.9em; }
+        .badge { padding: 6px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 600; }
+        .badge-current { background: #c6f6d5; color: #22543d; }
+        .badge-active { background: #bee3f8; color: #2c5282; }
+        .session-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        .detail-item { display: flex; flex-direction: column; }
+        .detail-label { color: #666; font-size: 0.85em; margin-bottom: 5px; font-weight: 600; }
+        .detail-value { color: #333; font-weight: 500; }
+        .ip-address { font-family: 'Courier New', monospace; color: #e53e3e; }
+        .token-display { background: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 0.85em; word-break: break-all; margin-top: 10px; }
+        .timeout-bar { background: #e2e8f0; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 10px; }
+        .timeout-progress { background: linear-gradient(90deg, #48bb78, #f6ad55, #fc8181); height: 100%; transition: width 1s linear; }
+        button { padding: 10px 20px; border: none; border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.3s; }
+        .btn-danger { background: #fc8181; color: white; }
+        .btn-danger:hover { background: #f56565; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5568d3; }
+        .cookie-section { background: #fef5e7; border-left: 4px solid #f39c12; padding: 20px; border-radius: 8px; margin-top: 20px; }
+        .cookie-section h3 { color: #d68910; margin-bottom: 15px; }
+        .actions { display: flex; gap: 10px; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Session Management System</h1>
+            <p>Real-time Session Tracking & Security - BHOKBHOJ</p>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Active Sessions</h3>
+                <div class="value">3</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Sessions</h3>
+                <div class="value">47</div>
+            </div>
+            <div class="stat-card">
+                <h3>Current Device</h3>
+                <div class="value" style="font-size: 1.5em;">🖥️ Desktop</div>
+            </div>
+            <div class="stat-card">
+                <h3>Session Timeout</h3>
+                <div class="value" style="font-size: 1.5em;">15 min</div>
+            </div>
+        </div>
+        
+        <!-- Current Session -->
+        <div class="section">
+            <h2>🖥️ Your Current Session</h2>
+            
+            <div class="session-card current">
+                <div class="session-header">
+                    <div class="device-info">
+                        <div class="device-icon">🖥️</div>
+                        <div class="device-details">
+                            <h3>Desktop - Chrome</h3>
+                            <p>Windows 10</p>
+                        </div>
+                    </div>
+                    <span class="badge badge-current">✓ Current Session</span>
+                </div>
+                
+                <div class="session-details">
+                    <div class="detail-item">
+                        <span class="detail-label">IP Address</span>
+                        <span class="detail-value ip-address">192.168.1.100</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Started</span>
+                        <span class="detail-value" id="currentStarted">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Last Activity</span>
+                        <span class="detail-value">Just now</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Expires In</span>
+                        <span class="detail-value" id="currentExpires">14:32</span>
+                    </div>
+                </div>
+                
+                <div class="detail-item">
+                    <span class="detail-label">Session Timeout Progress</span>
+                    <div class="timeout-bar">
+                        <div class="timeout-progress" id="currentProgress" style="width: 97%"></div>
+                    </div>
+                    <small style="color: #666; margin-top: 5px; display: block;">
+                        <span id="currentMinutes">14</span> of 15 minutes remaining
+                    </small>
+                </div>
+                
+                <div class="detail-item">
+                    <span class="detail-label">Session Token (JWT)</span>
+                    <div class="token-display">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3M2FiYzEyM2RlZjQ1NiIsImlhdCI6MTczMTY3ODkwMCwiZXhwIjoxNzMxNjc5ODAwfQ.abc123xyz789def456ghi789jkl012mno345pqr678stu901vwx234</div>
+                </div>
+                
+                <p style="color: #48bb78; font-weight: 500; margin-top: 15px;">This is your current session</p>
+            </div>
+        </div>
+        
+        <!-- All Active Sessions -->
+        <div class="section">
+            <h2>
+                📱 All Active Sessions
+                <span style="font-size: 0.6em; color: #666; font-weight: normal;">Auto-refresh every 10 seconds</span>
+            </h2>
+            
+            <!-- Session 1: Mobile -->
+            <div class="session-card">
+                <div class="session-header">
+                    <div class="device-info">
+                        <div class="device-icon">📱</div>
+                        <div class="device-details">
+                            <h3>Mobile - Chrome Mobile</h3>
+                            <p>Android 12</p>
+                        </div>
+                    </div>
+                    <span class="badge badge-active">Active</span>
+                </div>
+                
+                <div class="session-details">
+                    <div class="detail-item">
+                        <span class="detail-label">IP Address</span>
+                        <span class="detail-value ip-address">192.168.1.105</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Started</span>
+                        <span class="detail-value" id="mobile1Started">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Last Activity</span>
+                        <span class="detail-value">5 minutes ago</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Expires In</span>
+                        <span class="detail-value" id="mobile1Expires">9:45</span>
+                    </div>
+                </div>
+                
+                <div class="detail-item">
+                    <span class="detail-label">Session Timeout Progress</span>
+                    <div class="timeout-bar">
+                        <div class="timeout-progress" id="mobile1Progress" style="width: 65%"></div>
+                    </div>
+                    <small style="color: #666; margin-top: 5px; display: block;">
+                        <span id="mobile1Minutes">9</span> of 15 minutes remaining
+                    </small>
+                </div>
+                
+                <div class="actions">
+                    <button class="btn-danger" onclick="alert('Session ended successfully!')">
+                        🚫 End This Session
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Session 2: Tablet -->
+            <div class="session-card">
+                <div class="session-header">
+                    <div class="device-info">
+                        <div class="device-icon">📱</div>
+                        <div class="device-details">
+                            <h3>Tablet - Safari</h3>
+                            <p>iOS 16</p>
+                        </div>
+                    </div>
+                    <span class="badge badge-active">Active</span>
+                </div>
+                
+                <div class="session-details">
+                    <div class="detail-item">
+                        <span class="detail-label">IP Address</span>
+                        <span class="detail-value ip-address">192.168.1.110</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Started</span>
+                        <span class="detail-value" id="tablet1Started">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Last Activity</span>
+                        <span class="detail-value">12 minutes ago</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Expires In</span>
+                        <span class="detail-value" id="tablet1Expires">2:18</span>
+                    </div>
+                </div>
+                
+                <div class="detail-item">
+                    <span class="detail-label">Session Timeout Progress</span>
+                    <div class="timeout-bar">
+                        <div class="timeout-progress" id="tablet1Progress" style="width: 15%"></div>
+                    </div>
+                    <small style="color: #666; margin-top: 5px; display: block;">
+                        <span id="tablet1Minutes">2</span> of 15 minutes remaining
+                    </small>
+                </div>
+                
+                <div class="actions">
+                    <button class="btn-danger" onclick="alert('Session ended successfully!')">
+                        🚫 End This Session
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Session Cookies -->
+        <div class="section">
+            <h2>🍪 Session Cookies & Storage</h2>
+            
+            <div class="cookie-section">
+                <h3>Session Token (localStorage: adminToken)</h3>
+                <div class="token-display">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3M2FiYzEyM2RlZjQ1NiIsImlhdCI6MTczMTY3ODkwMCwiZXhwIjoxNzMxNjc5ODAwfQ.abc123xyz789def456ghi789jkl012mno345pqr678stu901vwx234</div>
+            </div>
+            
+            <div class="cookie-section" style="background: #f0fff4; border-left-color: #48bb78;">
+                <h3>Decoded Session Information</h3>
+                <div class="session-details">
+                    <div class="detail-item">
+                        <span class="detail-label">User ID</span>
+                        <span class="detail-value">673abc123def456</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Issued At (iat)</span>
+                        <span class="detail-value" id="issuedAt">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Expires At (exp)</span>
+                        <span class="detail-value" id="expiresAt">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Algorithm</span>
+                        <span class="detail-value">HS256 (HMAC SHA-256)</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="cookie-section" style="background: #e6f7ff; border-left-color: #1890ff;">
+                <h3>Session Cookie Properties</h3>
+                <div class="session-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Storage Type</span>
+                        <span class="detail-value">localStorage</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Cookie Name</span>
+                        <span class="detail-value">adminToken</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Secure</span>
+                        <span class="detail-value">✓ Yes (HTTPS only)</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">HttpOnly</span>
+                        <span class="detail-value">✓ Yes (JavaScript protected)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Set current times
+        const now = new Date();
+        const started = new Date(now.getTime() - 60000); // 1 minute ago
+        const mobile1Started = new Date(now.getTime() - 300000); // 5 minutes ago
+        const tablet1Started = new Date(now.getTime() - 720000); // 12 minutes ago
+        
+        document.getElementById('currentStarted').textContent = started.toLocaleString();
+        document.getElementById('mobile1Started').textContent = mobile1Started.toLocaleString();
+        document.getElementById('tablet1Started').textContent = tablet1Started.toLocaleString();
+        
+        // Set issued/expires times
+        const iat = new Date(now.getTime() - 60000);
+        const exp = new Date(now.getTime() + 840000); // 14 minutes from now
+        document.getElementById('issuedAt').textContent = iat.toLocaleString();
+        document.getElementById('expiresAt').textContent = exp.toLocaleString();
+        
+        // Countdown timers
+        let currentSeconds = 872; // 14:32
+        let mobile1Seconds = 585; // 9:45
+        let tablet1Seconds = 138; // 2:18
+        
+        function updateCountdown() {
+            // Current session
+            if (currentSeconds > 0) {
+                currentSeconds--;
+                const mins = Math.floor(currentSeconds / 60);
+                const secs = currentSeconds % 60;
+                document.getElementById('currentExpires').textContent = 
+                    `${mins}:${secs.toString().padStart(2, '0')}`;
+                document.getElementById('currentMinutes').textContent = mins;
+                document.getElementById('currentProgress').style.width = 
+                    ((currentSeconds / 900) * 100) + '%';
+            }
+            
+            // Mobile session
+            if (mobile1Seconds > 0) {
+                mobile1Seconds--;
+                const mins = Math.floor(mobile1Seconds / 60);
+                const secs = mobile1Seconds % 60;
+                document.getElementById('mobile1Expires').textContent = 
+                    `${mins}:${secs.toString().padStart(2, '0')}`;
+                document.getElementById('mobile1Minutes').textContent = mins;
+                document.getElementById('mobile1Progress').style.width = 
+                    ((mobile1Seconds / 900) * 100) + '%';
+            }
+            
+            // Tablet session
+            if (tablet1Seconds > 0) {
+                tablet1Seconds--;
+                const mins = Math.floor(tablet1Seconds / 60);
+                const secs = tablet1Seconds % 60;
+                document.getElementById('tablet1Expires').textContent = 
+                    `${mins}:${secs.toString().padStart(2, '0')}`;
+                document.getElementById('tablet1Minutes').textContent = mins;
+                document.getElementById('tablet1Progress').style.width = 
+                    ((tablet1Seconds / 900) * 100) + '%';
+            }
+        }
+        
+        // Update every second
+        setInterval(updateCountdown, 1000);
+        updateCountdown();
+    </script>
+</body>
+</html>

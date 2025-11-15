@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Cookie Demo - BHOKBHOJ</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial; background: #f5f7fa; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px; }
+        .section { background: white; padding: 30px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .info-box { background: #f8fafc; padding: 20px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #667eea; }
+        .cookie-display { background: #1e293b; color: #e2e8f0; padding: 20px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 0.9em; word-break: break-all; margin: 15px 0; }
+        button { background: #667eea; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin: 5px; font-weight: 600; }
+        button:hover { background: #5568d3; }
+        .btn-danger { background: #fc8181; }
+        .btn-danger:hover { background: #f56565; }
+        h2 { color: #333; margin-bottom: 15px; }
+        .label { color: #666; font-weight: 600; margin-top: 15px; margin-bottom: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background: #f8fafc; font-weight: 600; color: #666; }
+        .success { color: #48bb78; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍪 Session Cookie Demo</h1>
+            <p>View Session ID and Session Data in Cookie Format - BHOKBHOJ</p>
+        </div>
+        
+        <div class="section">
+            <h2>🎬 Create Demo Session</h2>
+            <p>Click the button below to create a session with cookies (like the image you showed)</p>
+            <button onclick="createSession()">🚀 Create Session with Cookies</button>
+            <button onclick="viewInDevTools()">🔍 View in DevTools</button>
+            <button class="btn-danger" onclick="clearSession()">🗑️ Clear Session</button>
+        </div>
+        
+        <div class="section">
+            <h2>📊 Current Session Information</h2>
+            <div id="sessionInfo">
+                <p style="color: #999;">No session created yet. Click "Create Session with Cookies" button above.</p>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>🍪 Session Cookies (Raw Format)</h2>
+            <div class="label">document.cookie output:</div>
+            <div class="cookie-display" id="rawCookies">No cookies set</div>
+        </div>
+        
+        <div class="section">
+            <h2>📋 Session Cookie Details (Like Your Image)</h2>
+            <div id="cookieTable"></div>
+        </div>
+        
+        <div class="section">
+            <h2>💾 Session Data Object</h2>
+            <div class="label">Session data stored in cookie:</div>
+            <div class="cookie-display" id="sessionData">No session data</div>
+        </div>
+    </div>
+    
+    <script>
+        function generateSessionId() {
+            return 'EXRoFHM3M_a7gxsHSe613sJSh28CkvhZ';
+        }
+        
+        function createSession() {
+            // Generate session ID
+            const sessionId = generateSessionId();
+            
+            // Create session data object
+            const sessionData = {
+                cookie: {
+                    originalMaxAge: 60000,
+                    expires: new Date(Date.now() + 60000).toISOString(),
+                    secure: true,
+                    httpOnly: false,
+                    path: "/"
+                },
+                userId: "673abc123def456",
+                username: "admin_aadarsha",
+                email: "admin@bhokbhoj.com",
+                role: "admin",
+                loginTime: new Date().toISOString(),
+                ipAddress: "192.168.1.100",
+                userAgent: navigator.userAgent
+            };
+            
+            // Set cookies
+            // Session ID cookie
+            document.cookie = `sessionId=${sessionId}; path=/; max-age=3600; SameSite=Strict`;
+            
+            // Session data cookie (JSON encoded)
+            const sessionDataEncoded = encodeURIComponent(JSON.stringify(sessionData));
+            document.cookie = `sessionData=${sessionDataEncoded}; path=/; max-age=3600; SameSite=Strict`;
+            
+            // User ID cookie
+            document.cookie = `userId=${sessionData.userId}; path=/; max-age=3600; SameSite=Strict`;
+            
+            // Username cookie
+            document.cookie = `username=${sessionData.username}; path=/; max-age=3600; SameSite=Strict`;
+            
+            // Auth token cookie
+            const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3M2FiYzEyMyIsImlhdCI6MTczMTY3ODkwMCwiZXhwIjoxNzMxNjc5ODAwfQ.abc123xyz';
+            document.cookie = `authToken=${token}; path=/; max-age=3600; SameSite=Strict`;
+            
+            alert('✅ Session created with cookies!\n\nNow:\n1. Press F12\n2. Go to Application tab\n3. Click Cookies → https://localhost:5443\n4. You will see all session cookies!');
+            
+            displaySession();
+        }
+        
+        function displaySession() {
+            const cookies = getCookies();
+            
+            if (!cookies.sessionId) {
+                document.getElementById('sessionInfo').innerHTML = 
+                    '<p style="color: #999;">No session found. Create one first.</p>';
+                return;
+            }
+            
+            // Display session info
+            const sessionData = cookies.sessionData ? JSON.parse(decodeURIComponent(cookies.sessionData)) : {};
+            
+            const html = `
+                <div class="info-box">
+                    <div class="label">Session ID:</div>
+                    <div class="cookie-display">${cookies.sessionId}</div>
+                </div>
+                
+                <div class="info-box">
+                    <div class="label">User Information:</div>
+                    <table>
+                        <tr><th>Field</th><th>Value</th></tr>
+                        <tr><td>User ID</td><td>${cookies.userId || 'N/A'}</td></tr>
+                        <tr><td>Username</td><td>${cookies.username || 'N/A'}</td></tr>
+                        <tr><td>Email</td><td>${sessionData.email || 'N/A'}</td></tr>
+                        <tr><td>Role</td><td>${sessionData.role || 'N/A'}</td></tr>
+                        <tr><td>Login Time</td><td>${sessionData.loginTime || 'N/A'}</td></tr>
+                        <tr><td>IP Address</td><td>${sessionData.ipAddress || 'N/A'}</td></tr>
+                    </table>
+                </div>
+                
+                <div class="info-box">
+                    <div class="label">Cookie Settings:</div>
+                    <table>
+                        <tr><th>Property</th><th>Value</th></tr>
+                        <tr><td>Max Age</td><td>${sessionData.cookie?.originalMaxAge || 'N/A'} ms</td></tr>
+                        <tr><td>Expires</td><td>${sessionData.cookie?.expires || 'N/A'}</td></tr>
+                        <tr><td>Secure</td><td>${sessionData.cookie?.secure ? '✓ Yes' : '✗ No'}</td></tr>
+                        <tr><td>HttpOnly</td><td>${sessionData.cookie?.httpOnly ? '✓ Yes' : '✗ No'}</td></tr>
+                        <tr><td>Path</td><td>${sessionData.cookie?.path || '/'}</td></tr>
+                        <tr><td>SameSite</td><td>Strict</td></tr>
+                    </table>
+                </div>
+            `;
+            
+            document.getElementById('sessionInfo').innerHTML = html;
+            
+            // Display raw cookies
+            document.getElementById('rawCookies').textContent = document.cookie;
+            
+            // Display cookie table
+            displayCookieTable(cookies);
+            
+            // Display session data
+            document.getElementById('sessionData').textContent = 
+                JSON.stringify(sessionData, null, 2);
+        }
+        
+        function displayCookieTable(cookies) {
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Value</th>
+                            <th>Domain</th>
+                            <th>Path</th>
+                            <th>Expires</th>
+                            <th>Size</th>
+                            <th>HttpOnly</th>
+                            <th>Secure</th>
+                            <th>SameSite</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            for (const [name, value] of Object.entries(cookies)) {
+                const size = new Blob([value]).size;
+                html += `
+                    <tr>
+                        <td><strong>${name}</strong></td>
+                        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${value.substring(0, 30)}...</td>
+                        <td>localhost</td>
+                        <td>/</td>
+                        <td>Session</td>
+                        <td>${size} bytes</td>
+                        <td>✗</td>
+                        <td>✓</td>
+                        <td>Strict</td>
+                    </tr>
+                `;
+            }
+            
+            html += `
+                    </tbody>
+                </table>
+            `;
+            
+            document.getElementById('cookieTable').innerHTML = html;
+        }
+        
+        function getCookies() {
+            const cookies = {};
+            document.cookie.split(';').forEach(cookie => {
+                const [name, value] = cookie.trim().split('=');
+                if (name) cookies[name] = value;
+            });
+            return cookies;
+        }
+        
+        function viewInDevTools() {
+            alert('📋 To view cookies in DevTools:\n\n1. Press F12\n2. Click "Application" tab\n3. In left sidebar, expand "Cookies"\n4. Click "https://localhost:5443"\n5. You will see all cookies in a table!\n\nYou will see:\n- sessionId\n- sessionData\n- userId\n- username\n- authToken');
+        }
+        
+        function clearSession() {
+            // Clear all cookies
+            document.cookie.split(';').forEach(cookie => {
+                const name = cookie.split('=')[0].trim();
+                document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+            });
+            
+            alert('✅ Session cleared!');
+            displaySession();
+        }
+        
+        // Auto-refresh display
+        setInterval(() => {
+            const cookies = getCookies();
+            if (cookies.sessionId) {
+                displaySession();
+            }
+        }, 2000);
+        
+        // Initial display
+        displaySession();
+    </script>
+</body>
+</html>

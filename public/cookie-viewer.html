@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie Viewer - BHOKBHOJ</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Courier New', monospace; background: #1e293b; color: #e2e8f0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: #334155; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .header h1 { color: #60a5fa; margin-bottom: 10px; }
+        .section { background: #334155; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .section h2 { color: #60a5fa; margin-bottom: 15px; border-bottom: 2px solid #475569; padding-bottom: 10px; }
+        .cookie-item { background: #1e293b; padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid #60a5fa; }
+        .cookie-name { color: #fbbf24; font-weight: bold; margin-bottom: 5px; }
+        .cookie-value { color: #34d399; word-break: break-all; margin-bottom: 10px; }
+        .cookie-details { color: #94a3b8; font-size: 0.9em; }
+        .raw-data { background: #0f172a; padding: 15px; border-radius: 6px; color: #e2e8f0; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+        button { background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin: 5px; }
+        button:hover { background: #2563eb; }
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; margin-left: 10px; }
+        .badge-yes { background: #10b981; color: white; }
+        .badge-no { background: #ef4444; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍪 Cookie & Storage Viewer</h1>
+            <p>View all cookies and localStorage in raw format - BHOKBHOJ</p>
+            <button onclick="refresh()">🔄 Refresh</button>
+            <button onclick="copyAll()">📋 Copy All</button>
+            <button onclick="clearStorage()">🗑️ Clear All</button>
+        </div>
+        
+        <!-- localStorage -->
+        <div class="section">
+            <h2>📦 localStorage (Session Token Storage)</h2>
+            <div id="localStorageContent"></div>
+        </div>
+        
+        <!-- sessionStorage -->
+        <div class="section">
+            <h2>💾 sessionStorage</h2>
+            <div id="sessionStorageContent"></div>
+        </div>
+        
+        <!-- Cookies -->
+        <div class="section">
+            <h2>🍪 document.cookie (Raw)</h2>
+            <div class="raw-data" id="rawCookies"></div>
+        </div>
+        
+        <!-- Decoded JWT -->
+        <div class="section">
+            <h2>🔓 Decoded JWT Token</h2>
+            <div id="decodedToken"></div>
+        </div>
+        
+        <!-- Session Info -->
+        <div class="section">
+            <h2>📊 Session Information</h2>
+            <div id="sessionInfo"></div>
+        </div>
+    </div>
+    
+    <script>
+        function refresh() {
+            loadLocalStorage();
+            loadSessionStorage();
+            loadCookies();
+            loadDecodedToken();
+            loadSessionInfo();
+        }
+        
+        function loadLocalStorage() {
+            const container = document.getElementById('localStorageContent');
+            
+            if (localStorage.length === 0) {
+                container.innerHTML = '<div class="cookie-item">No localStorage items found</div>';
+                return;
+            }
+            
+            let html = '';
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                
+                html += `
+                    <div class="cookie-item">
+                        <div class="cookie-name">Key: ${key}</div>
+                        <div class="cookie-value">Value: ${value}</div>
+                        <div class="cookie-details">
+                            Length: ${value.length} characters | 
+                            Size: ${new Blob([value]).size} bytes
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        function loadSessionStorage() {
+            const container = document.getElementById('sessionStorageContent');
+            
+            if (sessionStorage.length === 0) {
+                container.innerHTML = '<div class="cookie-item">No sessionStorage items found</div>';
+                return;
+            }
+            
+            let html = '';
+            for (let i = 0; i < sessionStorage.length; i++) {
+                const key = sessionStorage.key(i);
+                const value = sessionStorage.getItem(key);
+                
+                html += `
+                    <div class="cookie-item">
+                        <div class="cookie-name">Key: ${key}</div>
+                        <div class="cookie-value">Value: ${value}</div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        function loadCookies() {
+            const container = document.getElementById('rawCookies');
+            const cookies = document.cookie;
+            
+            if (!cookies) {
+                container.textContent = 'No cookies found in document.cookie\n\n(Session token is stored in localStorage, not cookies)';
+                return;
+            }
+            
+            container.textContent = cookies;
+        }
+        
+        function loadDecodedToken() {
+            const container = document.getElementById('decodedToken');
+            const token = localStorage.getItem('adminToken');
+            
+            if (!token) {
+                container.innerHTML = '<div class="cookie-item">No token found. Please login first.</div>';
+                return;
+            }
+            
+            try {
+                const parts = token.split('.');
+                const header = JSON.parse(atob(parts[0]));
+                const payload = JSON.parse(atob(parts[1]));
+                const signature = parts[2];
+                
+                const html = `
+                    <div class="cookie-item">
+                        <div class="cookie-name">Header (Algorithm & Type)</div>
+                        <div class="raw-data">${JSON.stringify(header, null, 2)}</div>
+                    </div>
+                    
+                    <div class="cookie-item">
+                        <div class="cookie-name">Payload (User Data)</div>
+                        <div class="raw-data">${JSON.stringify(payload, null, 2)}</div>
+                        <div class="cookie-details">
+                            User ID: ${payload.id || 'N/A'} | 
+                            Issued: ${new Date(payload.iat * 1000).toLocaleString()} | 
+                            Expires: ${new Date(payload.exp * 1000).toLocaleString()}
+                        </div>
+                    </div>
+                    
+                    <div class="cookie-item">
+                        <div class="cookie-name">Signature (Verification)</div>
+                        <div class="cookie-value">${signature}</div>
+                        <div class="cookie-details">
+                            This signature verifies the token hasn't been tampered with
+                        </div>
+                    </div>
+                    
+                    <div class="cookie-item">
+                        <div class="cookie-name">Full Token (Raw)</div>
+                        <div class="raw-data">${token}</div>
+                    </div>
+                `;
+                
+                container.innerHTML = html;
+            } catch (error) {
+                container.innerHTML = `<div class="cookie-item">Error decoding token: ${error.message}</div>`;
+            }
+        }
+        
+        function loadSessionInfo() {
+            const container = document.getElementById('sessionInfo');
+            const token = localStorage.getItem('adminToken');
+            
+            if (!token) {
+                container.innerHTML = '<div class="cookie-item">No active session</div>';
+                return;
+            }
+            
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const now = Date.now() / 1000;
+                const timeLeft = payload.exp - now;
+                const minutesLeft = Math.floor(timeLeft / 60);
+                const secondsLeft = Math.floor(timeLeft % 60);
+                
+                const html = `
+                    <div class="cookie-item">
+                        <div class="cookie-name">Session Status</div>
+                        <div class="cookie-value">
+                            ${timeLeft > 0 ? '✓ Active' : '✗ Expired'}
+                            <span class="badge ${timeLeft > 0 ? 'badge-yes' : 'badge-no'}">
+                                ${timeLeft > 0 ? 'VALID' : 'EXPIRED'}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="cookie-item">
+                        <div class="cookie-name">Time Remaining</div>
+                        <div class="cookie-value">
+                            ${timeLeft > 0 ? `${minutesLeft} minutes ${secondsLeft} seconds` : 'Session expired'}
+                        </div>
+                    </div>
+                    
+                    <div class="cookie-item">
+                        <div class="cookie-name">Session Details</div>
+                        <div class="cookie-details">
+                            User ID: ${payload.id || 'N/A'}<br>
+                            Created: ${new Date(payload.iat * 1000).toLocaleString()}<br>
+                            Expires: ${new Date(payload.exp * 1000).toLocaleString()}<br>
+                            Duration: ${Math.floor((payload.exp - payload.iat) / 60)} minutes
+                        </div>
+                    </div>
+                `;
+                
+                container.innerHTML = html;
+            } catch (error) {
+                container.innerHTML = `<div class="cookie-item">Error: ${error.message}</div>`;
+            }
+        }
+        
+        function copyAll() {
+            const data = {
+                localStorage: {},
+                sessionStorage: {},
+                cookies: document.cookie,
+                token: localStorage.getItem('adminToken')
+            };
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                data.localStorage[key] = localStorage.getItem(key);
+            }
+            
+            for (let i = 0; i < sessionStorage.length; i++) {
+                const key = sessionStorage.key(i);
+                data.sessionStorage[key] = sessionStorage.getItem(key);
+            }
+            
+            navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+            alert('✅ All data copied to clipboard!');
+        }
+        
+        function clearStorage() {
+            if (confirm('Are you sure you want to clear all storage? You will be logged out.')) {
+                localStorage.clear();
+                sessionStorage.clear();
+                alert('✅ Storage cleared!');
+                refresh();
+            }
+        }
+        
+        // Auto-refresh every 5 seconds
+        setInterval(refresh, 5000);
+        
+        // Initial load
+        refresh();
+    </script>
+</body>
+</html>

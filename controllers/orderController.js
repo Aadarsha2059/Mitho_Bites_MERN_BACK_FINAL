@@ -189,9 +189,9 @@ exports.createOrder = async (req, res) => {
             const formatNPR = (amount) => `NPR ${Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             // Order confirmation email (same style as bill)
             const orderConfirmationHtml = `
-                <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:650px;margin:32px auto;background:#fff;border-radius:18px;box-shadow:0 6px 32px #5a3fd733,0 2px 12px #2d1e5f22;overflow:hidden;">
-                    <div style="background:linear-gradient(90deg,#5a3fd7 0%,#7c5dfa 60%,#ffb347 100%);color:#fff;padding:32px 40px 18px 40px;text-align:center;">
-                        <h1 style="margin:0;font-size:2.3em;letter-spacing:1.2px;font-weight:900;text-shadow:0 2px 12px #4c51bf33;">Mitho Bites</h1>
+                <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:650px;margin:32px auto;background:#fff;border-radius:18px;box-shadow:0 6px 32px rgba(20,184,166,0.2),0 2px 12px rgba(13,148,136,0.15);overflow:hidden;">
+                    <div style="background:linear-gradient(90deg,#14b8a6 0%,#0d9488 60%,#FFA500 100%);color:#fff;padding:32px 40px 18px 40px;text-align:center;">
+                        <h1 style="margin:0;font-size:2.3em;letter-spacing:1.2px;font-weight:900;text-shadow:0 2px 12px rgba(15,118,110,0.3);">🍽️ BHOKBHOJ</h1>
                         <div style="font-size:1.18em;opacity:0.97;font-weight:600;letter-spacing:0.5px;">Order Confirmation</div>
                     </div>
                     <div style="padding:32px 40px 18px 40px;">
@@ -240,17 +240,17 @@ exports.createOrder = async (req, res) => {
                         </div>
                         <div style="margin-top:18px;font-size:1.13em;"><b>Delivery Address:</b> ${order.deliveryAddress?.street || ''}</div>
                         <div style="margin-top:8px;font-size:1.13em;"><b>Estimated Delivery Time:</b> ${order.estimatedDeliveryTime ? new Date(order.estimatedDeliveryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</div>
-                        <div style="margin-top:32px;text-align:center;color:#5a3fd7;font-size:1.08em;font-weight:600;">
-                            If you have any questions, contact us at <a href='mailto:${process.env.EMAIL_USER}' style='color:#ffb347;text-decoration:none;'>${process.env.EMAIL_USER}</a>.<br/>
-                            <span style="font-size:0.98em;color:#888;font-weight:400;">&copy; ${new Date().getFullYear()} Mitho Bites Nepal</span>
+                        <div style="margin-top:32px;text-align:center;color:#14b8a6;font-size:1.08em;font-weight:600;">
+                            If you have any questions, contact us at <a href='mailto:${process.env.EMAIL_USER}' style='color:#FFA500;text-decoration:none;'>${process.env.EMAIL_USER}</a>.<br/>
+                            <span style="font-size:0.98em;color:#888;font-weight:400;">&copy; ${new Date().getFullYear()} BHOKBHOJ Nepal</span>
                         </div>
                     </div>
                 </div>
             `;
             const mailOptions = {
-                from: `"Mitho Bites" <${process.env.EMAIL_USER}>`,
+                from: `"BHOKBHOJ" <${process.env.EMAIL_USER}>`,
                 to: user.email,
-                subject: "Order Confirmation - Mitho Bites",
+                subject: "Order Confirmation - BHOKBHOJ",
                 html: orderConfirmationHtml
             };
             transporter.sendMail(mailOptions, (err, info) => {
@@ -551,9 +551,9 @@ exports.markOrderReceived = async (req, res) => {
             const restaurantName = order.items[0]?.restaurantName || order.items[0]?.productId?.restaurantId?.name || 'Unknown';
             const orderDate = order.orderDate ? new Date(order.orderDate) : new Date();
             const billHtml = `
-                <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:650px;margin:32px auto;background:#fff;border-radius:18px;box-shadow:0 6px 32px #5a3fd733,0 2px 12px #2d1e5f22;overflow:hidden;">
-                    <div style="background:linear-gradient(90deg,#5a3fd7 0%,#7c5dfa 60%,#ffb347 100%);color:#fff;padding:32px 40px 18px 40px;text-align:center;">
-                        <h1 style="margin:0;font-size:2.3em;letter-spacing:1.2px;font-weight:900;text-shadow:0 2px 12px #4c51bf33;">Mitho Bites</h1>
+                <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:650px;margin:32px auto;background:#fff;border-radius:18px;box-shadow:0 6px 32px rgba(20,184,166,0.2),0 2px 12px rgba(13,148,136,0.15);overflow:hidden;">
+                    <div style="background:linear-gradient(90deg,#14b8a6 0%,#0d9488 60%,#FFA500 100%);color:#fff;padding:32px 40px 18px 40px;text-align:center;">
+                        <h1 style="margin:0;font-size:2.3em;letter-spacing:1.2px;font-weight:900;text-shadow:0 2px 12px rgba(15,118,110,0.3);">🍽️ BHOKBHOJ</h1>
                         <div style="font-size:1.18em;opacity:0.97;font-weight:600;letter-spacing:0.5px;">Order Bill / Receipt</div>
                     </div>
                     <div style="padding:32px 40px 18px 40px;">
@@ -565,9 +565,9 @@ exports.markOrderReceived = async (req, res) => {
                             <div><b>Date:</b> ${orderDate.toLocaleDateString()}<br/><b>Time:</b> ${orderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                             <div><b>Delivery Address:</b> ${order.deliveryAddress?.street || ''}</div>
                         </div>
-                        <table style="width:100%;border-collapse:collapse;margin-top:18px;font-size:1.08em;box-shadow:0 2px 8px #5a3fd71a;">
+                        <table style="width:100%;border-collapse:collapse;margin-top:18px;font-size:1.08em;box-shadow:0 2px 8px rgba(20,184,166,0.1);">
                             <thead>
-                                <tr style="background:linear-gradient(90deg,#5a3fd7 0%,#7c5dfa 100%);color:#fff;">
+                                <tr style="background:linear-gradient(90deg,#14b8a6 0%,#0d9488 100%);color:#fff;">
                                     <th style='padding:10px 12px;border:1px solid #e9eaf3;'>#</th>
                                     <th style='padding:10px 12px;border:1px solid #e9eaf3;'>Product</th>
                                     <th style='padding:10px 12px;border:1px solid #e9eaf3;'>Qty</th>
@@ -608,27 +608,27 @@ exports.markOrderReceived = async (req, res) => {
                             </table>
                         </div>
                         <div style="margin-top:28px;font-size:1.13em;">
-                            <b>Payment Method:</b> <span style="color:#5a3fd7;">${order.paymentMethod ? order.paymentMethod.toUpperCase() : 'N/A'}</span>
+                            <b>Payment Method:</b> <span style="color:#14b8a6;">${order.paymentMethod ? order.paymentMethod.toUpperCase() : 'N/A'}</span>
                         </div>
                         <div style="margin-top:8px;font-size:1.13em;">
-                            <b>Order Status:</b> <span style="color:#ffb347;">${order.orderStatus ? order.orderStatus.toUpperCase() : 'N/A'}</span>
+                            <b>Order Status:</b> <span style="color:#FFA500;">${order.orderStatus ? order.orderStatus.toUpperCase() : 'N/A'}</span>
                         </div>
                         <div style="margin-top:32px;display:flex;justify-content:space-between;align-items:flex-end;">
                             <div style='font-size:13px;color:#888;'>Checkout by: <b>system super admin Aadarsha Babu Dhakal</b></div>
                             <div style='font-size:13px;color:#888;'>Receiver name: <b>${restaurantName}</b></div>
                         </div>
-                        <div style="margin-top:32px;text-align:center;color:#5a3fd7;font-size:1.08em;font-weight:600;">
-                            Thank you for choosing Mitho Bites!<br/>
-                            <span style="font-size:0.98em;color:#888;font-weight:400;">For support, contact <a href='mailto:${process.env.EMAIL_USER}' style='color:#ffb347;text-decoration:none;'>${process.env.EMAIL_USER}</a></span><br/>
-                            <span style="font-size:0.98em;color:#888;font-weight:400;">&copy; ${new Date().getFullYear()} Mitho Bites Nepal</span>
+                        <div style="margin-top:32px;text-align:center;color:#14b8a6;font-size:1.08em;font-weight:600;">
+                            Thank you for choosing BHOKBHOJ!<br/>
+                            <span style="font-size:0.98em;color:#888;font-weight:400;">For support, contact <a href='mailto:${process.env.EMAIL_USER}' style='color:#FFA500;text-decoration:none;'>${process.env.EMAIL_USER}</a></span><br/>
+                            <span style="font-size:0.98em;color:#888;font-weight:400;">&copy; ${new Date().getFullYear()} BHOKBHOJ Nepal</span>
                         </div>
                     </div>
                 </div>
             `;
             const mailOptions = {
-                from: `"Mitho Bites" <${process.env.EMAIL_USER}>`,
+                from: `"BHOKBHOJ" <${process.env.EMAIL_USER}>`,
                 to: user.email,
-                subject: "Bill Confirmation - Mitho Bites",
+                subject: "Bill Confirmation - BHOKBHOJ",
                 html: billHtml
             };
             transporter.sendMail(mailOptions, (err, info) => {

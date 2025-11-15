@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Management Demo</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f5f7fa; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px; }
+        .section { background: white; padding: 30px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .info-box { background: #f8fafc; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #667eea; }
+        .cookie-value { font-family: monospace; background: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 8px; overflow-x: auto; word-break: break-all; }
+        h2 { color: #667eea; }
+        .badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 600; }
+        .badge-active { background: #c6f6d5; color: #22543d; }
+        .badge-warning { background: #fed7d7; color: #742a2a; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Session Management & Security Demo</h1>
+            <p>Understanding Sessions, Cookies, and Timeouts - BHOKBHOJ</p>
+        </div>
+        
+        <div class="section">
+            <h2>📚 What is Session Management?</h2>
+            <p><strong>Simple Explanation:</strong> Session management is like giving each visitor a temporary ID card when they login. This ID card (session) proves who they are and expires after 15 minutes of not using it.</p>
+            
+            <div class="info-box">
+                <h3>🎯 Hotel Key Card Analogy:</h3>
+                <ul>
+                    <li><strong>Login = Check-in:</strong> You get a key card</li>
+                    <li><strong>Session = Key Card:</strong> Use it to access your room</li>
+                    <li><strong>Timeout = Expiration:</strong> Card stops working after checkout</li>
+                    <li><strong>Logout = Check-out:</strong> Return the card</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>🔑 What is a Session ID?</h2>
+            <p>A <strong>Session ID</strong> is a unique random code that identifies your session. It's like a ticket number - it identifies you without revealing personal information.</p>
+            <p><strong>Contains:</strong> User ID (encrypted), creation time, expiration time</p>
+            <p><strong>Does NOT contain:</strong> Your password, personal data</p>
+        </div>
+        
+        <div class="section">
+            <h2>🍪 What are Session Cookies?</h2>
+            <p><strong>Cookies</strong> are small data pieces stored in your browser. A <strong>Session Cookie</strong> stores your Session ID so you stay logged in.</p>
+            
+            <div class="info-box">
+                <h3>✅ Why Cookies are Useful:</h3>
+                <ul>
+                    <li><strong>Stay Logged In:</strong> Don't re-enter password on every page</li>
+                    <li><strong>Remember You:</strong> Website knows who you are</li>
+                    <li><strong>Shopping Cart:</strong> Keeps items while browsing</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>⏱️ What is Session Timeout (15 Minutes)?</h2>
+            <p>Your session automatically expires after <strong>15 minutes of inactivity</strong>.</p>
+            
+            <div class="info-box">
+                <h3>Timeline:</h3>
+                <ul>
+                    <li><strong>0:00</strong> - You login → Session expires at 0:15</li>
+                    <li><strong>0:05</strong> - You click something → Extended to 0:20</li>
+                    <li><strong>0:20</strong> - No activity for 15 min → Logged out</li>
+                </ul>
+            </div>
+            
+            <div class="info-box" style="border-left-color: #f39c12; background: #fef5e7;">
+                <h3>🛡️ Why 15 Minutes?</h3>
+                <p><strong>Security:</strong> If you forget to logout, someone else can't access your account after 15 minutes.</p>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>📱 Simultaneous Session Management</h2>
+            <p>Track all devices you're logged in from:</p>
+            <ul>
+                <li>🖥️ Office computer (Windows, Chrome)</li>
+                <li>📱 Phone (Android, Chrome Mobile)</li>
+                <li>💻 Home laptop (MacOS, Safari)</li>
+            </ul>
+            
+            <div class="info-box" style="border-left-color: #48bb78; background: #f0fff4;">
+                <h3>✅ Security Benefits:</h3>
+                <ul>
+                    <li><strong>Detect Unauthorized Access:</strong> See unknown logins</li>
+                    <li><strong>Remote Logout:</strong> End sessions on lost devices</li>
+                    <li><strong>Limit Access:</strong> Prevent account sharing</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>🎬 Your Current Session Info</h2>
+            
+            <div class="info-box">
+                <h3>Session ID (Token):</h3>
+                <div class="cookie-value" id="sessionId">Not logged in</div>
+                <span class="badge badge-warning" id="sessionStatus">No Active Session</span>
+            </div>
+            
+            <div class="info-box">
+                <h3>Device Information:</h3>
+                <p><strong>Device:</strong> <span id="deviceType">-</span></p>
+                <p><strong>Browser:</strong> <span id="browser">-</span></p>
+                <p><strong>OS:</strong> <span id="os">-</span></p>
+                <p><strong>IP:</strong> <span id="ipAddress">-</span></p>
+            </div>
+            
+            <div class="info-box">
+                <h3>Session Cookie (localStorage):</h3>
+                <div class="cookie-value" id="cookieValue">No cookie found</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>🛡️ How This Protects Your Website</h2>
+            
+            <div class="info-box" style="border-left-color: #e53e3e; background: #fff5f5;">
+                <h3>❌ Without Session Management:</h3>
+                <ul>
+                    <li>Hacker steals session → Access forever</li>
+                    <li>Forget to logout → Anyone can access</li>
+                    <li>Unknown login → You never know</li>
+                </ul>
+            </div>
+            
+            <div class="info-box" style="border-left-color: #48bb78; background: #f0fff4;">
+                <h3>✅ With Session Management:</h3>
+                <ul>
+                    <li>Stolen session → Expires in 15 minutes</li>
+                    <li>Forget logout → Auto-logout after 15 min</li>
+                    <li>Unknown login → You see it and end it</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function detectDevice() {
+            const ua = navigator.userAgent;
+            if (/mobile/i.test(ua)) return 'Mobile 📱';
+            if (/tablet|ipad/i.test(ua)) return 'Tablet 📱';
+            return 'Desktop 🖥️';
+        }
+        
+        function detectBrowser() {
+            const ua = navigator.userAgent;
+            if (ua.includes('Chrome')) return 'Chrome';
+            if (ua.includes('Firefox')) return 'Firefox';
+            if (ua.includes('Safari')) return 'Safari';
+            if (ua.includes('Edge')) return 'Edge';
+            return 'Unknown';
+        }
+        
+        function detectOS() {
+            const ua = navigator.userAgent;
+            if (ua.includes('Windows')) return 'Windows';
+            if (ua.includes('Mac')) return 'MacOS';
+            if (ua.includes('Linux')) return 'Linux';
+            if (ua.includes('Android')) return 'Android';
+            if (ua.includes('iOS')) return 'iOS';
+            return 'Unknown';
+        }
+        
+        async function getIP() {
+            try {
+                const res = await fetch('https://api.ipify.org?format=json');
+                const data = await res.json();
+                return data.ip;
+            } catch {
+                return 'Unable to detect';
+            }
+        }
+        
+        async function loadInfo() {
+            const token = localStorage.getItem('adminToken');
+            
+            document.getElementById('deviceType').textContent = detectDevice();
+            document.getElementById('browser').textContent = detectBrowser();
+            document.getElementById('os').textContent = detectOS();
+            document.getElementById('ipAddress').textContent = await getIP();
+            
+            if (token) {
+                document.getElementById('sessionId').textContent = token;
+                document.getElementById('sessionStatus').textContent = '✓ Active Session';
+                document.getElementById('sessionStatus').className = 'badge badge-active';
+                document.getElementById('cookieValue').textContent = token;
+            } else {
+                document.getElementById('sessionId').textContent = 'No session found. Please login first.';
+                document.getElementById('cookieValue').textContent = 'No adminToken in localStorage';
+            }
+        }
+        
+        window.onload = loadInfo;
+    </script>
+</body>
+</html>

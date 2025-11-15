@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Management - BHOKBHOJ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card h3 {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        
+        .stat-card .value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .sessions-section {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .session-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+        
+        .session-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+        
+        .session-card.current {
+            border-color: #48bb78;
+            background: #f0fff4;
+        }
+        
+        .session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .device-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .device-icon {
+            font-size: 2.5em;
+        }
+        
+        .device-details h3 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .device-details p {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .badge-current {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .badge-active {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+        
+        .session-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .detail-label {
+            color: #666;
+            font-size: 0.85em;
+            margin-bottom: 5px;
+        }
+        
+        .detail-value {
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .ip-address {
+            font-family: 'Courier New', monospace;
+            color: #e53e3e;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-danger {
+            background: #fc8181;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #f56565;
+        }
+        
+        .btn-warning {
+            background: #f6ad55;
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background: #ed8936;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+        
+        .timeout-info {
+            background: #fef5e7;
+            border-left: 4px solid #f39c12;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .timeout-info h3 {
+            color: #d68910;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔐 Session Management</h1>
+        <p>Manage your active sessions and security - BHOKBHOJ</p>
+    </div>
+    
+    <div class="timeout-info">
+        <h3>⏱️ Session Timeout Policy</h3>
+        <p><strong>Automatic Logout:</strong> You will be logged out after <strong>15 minutes of inactivity</strong> for security purposes.</p>
+        <p><strong>Activity Extension:</strong> Each action you perform extends your session by another 15 minutes.</p>
+    </div>
+    
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Active Sessions</h3>
+            <div class="value" id="activeSessions">-</div>
+        </div>
+        <div class="stat-card">
+            <h3>Total Sessions</h3>
+            <div class="value" id="totalSessions">-</div>
+        </div>
+        <div class="stat-card">
+            <h3>Current Device</h3>
+            <div class="value" id="currentDevice" style="font-size: 1.5em;">-</div>
+        </div>
+    </div>
+    
+    <div class="sessions-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>📱 Active Sessions</h2>
+            <div>
+                <button class="btn-warning" onclick="endOtherSessions()">🚫 End Other Sessions</button>
+                <button class="btn-primary" onclick="loadSessions()">🔄 Refresh</button>
+            </div>
+        </div>
+        
+        <div id="sessionsContainer">
+            <div class="loading">Loading sessions...</div>
+        </div>
+    </div>
+    
+    <script>
+        const token = localStorage.getItem('adminToken');
+        
+        if (!token) {
+            alert('Please login first');
+            window.location.href = '/admin-login.html';
+        }
+        
+        async function loadSessions() {
+            try {
+                const headers = {
+                    'Authorization': `Bearer ${token}`
+                };
+                
+                // Get sessions
+                const response = await fetch('/api/sessions/my-sessions', { headers });
+                const data = await response.json();
+                
+                if (data.success) {
+                    displaySessions(data.data);
+                    
+                    // Get stats
+                    const statsResponse = await fetch('/api/sessions/session-stats', { headers });
+                    const statsData = await statsResponse.json();
+                    
+                    if (statsData.success) {
+                        document.getElementById('activeSessions').textContent = statsData.data.activeSessions;
+                        document.getElementById('totalSessions').textContent = statsData.data.totalSessions;
+                    }
+                } else {
+                    document.getElementById('sessionsContainer').innerHTML = 
+                        '<div class="loading">Failed to load sessions. Please login again.</div>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('sessionsContainer').innerHTML = 
+                    '<div class="loading">Error loading sessions.</div>';
+            }
+        }
+        
+        function displaySessions(sessions) {
+            if (sessions.length === 0) {
+                document.getElementById('sessionsContainer').innerHTML = 
+                    '<div class="loading">No active sessions found</div>';
+                return;
+            }
+            
+            let html = '';
+            
+            sessions.forEach(session => {
+                const deviceIcon = getDeviceIcon(session.deviceType);
+                const createdAt = new Date(session.createdAt).toLocaleString();
+                const lastActivity = new Date(session.lastActivity).toLocaleString();
+                const expiresAt = new Date(session.expiresAt).toLocaleString();
+                const timeLeft = Math.round((new Date(session.expiresAt) - new Date()) / 60000);
+                
+                if (session.isCurrent) {
+                    document.getElementById('currentDevice').textContent = 
+                        `${deviceIcon} ${session.deviceType}`;
+                }
+                
+                html += `
+                    <div class="session-card ${session.isCurrent ? 'current' : ''}">
+                        <div class="session-header">
+                            <div class="device-info">
+                                <div class="device-icon">${deviceIcon}</div>
+                                <div class="device-details">
+                                    <h3>${session.deviceType} - ${session.browser}</h3>
+                                    <p>${session.os}</p>
+                                </div>
+                            </div>
+                            <span class="badge ${session.isCurrent ? 'badge-current' : 'badge-active'}">
+                                ${session.isCurrent ? '✓ Current Session' : 'Active'}
+                            </span>
+                        </div>
+                        
+                        <div class="session-details">
+                            <div class="detail-item">
+                                <span class="detail-label">IP Address</span>
+                                <span class="detail-value ip-address">${session.ipAddress}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Started</span>
+                                <span class="detail-value">${createdAt}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Last Activity</span>
+                                <span class="detail-value">${lastActivity}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Expires In</span>
+                                <span class="detail-value">${timeLeft} minutes</span>
+                            </div>
+                        </div>
+                        
+                        ${!session.isCurrent ? `
+                            <div class="actions">
+                                <button class="btn-danger" onclick="endSession('${session.id}')">
+                                    🚫 End This Session
+                                </button>
+                            </div>
+                        ` : '<p style="color: #48bb78; font-weight: 500;">This is your current session</p>'}
+                    </div>
+                `;
+            });
+            
+            document.getElementById('sessionsContainer').innerHTML = html;
+        }
+        
+        function getDeviceIcon(deviceType) {
+            switch(deviceType) {
+                case 'Desktop': return '🖥️';
+                case 'Mobile': return '📱';
+                case 'Tablet': return '📱';
+                default: return '💻';
+            }
+        }
+        
+        async function endSession(sessionId) {
+            if (!confirm('Are you sure you want to end this session?')) {
+                return;
+            }
+            
+            try {
+                const headers = {
+                    'Authorization': `Bearer ${token}`
+                };
+                
+                const response = await fetch(`/api/sessions/session/${sessionId}`, {
+                    method: 'DELETE',
+                    headers
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('✅ Session ended successfully');
+                    loadSessions();
+                } else {
+                    alert('❌ Failed to end session');
+                }
+            } catch (error) {
+                alert('❌ Error ending session');
+            }
+        }
+        
+        async function endOtherSessions() {
+            if (!confirm('Are you sure you want to end all other sessions? You will remain logged in on this device only.')) {
+                return;
+            }
+            
+            try {
+                const headers = {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                };
+                
+                const response = await fetch('/api/sessions/end-other-sessions', {
+                    method: 'POST',
+                    headers
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`✅ ${data.count} session(s) ended successfully`);
+                    loadSessions();
+                } else {
+                    alert('❌ Failed to end sessions');
+                }
+            } catch (error) {
+                alert('❌ Error ending sessions');
+            }
+        }
+        
+        // Load sessions on page load
+        window.onload = loadSessions;
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadSessions, 30000);
+    </script>
+</body>
+</html>

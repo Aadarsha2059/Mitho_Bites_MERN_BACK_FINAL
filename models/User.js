@@ -60,14 +60,11 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
-    // confirmpassword:{
-    //     type:String,
-    //     required:true,
-    // }
-    // role:{
-    //   type:String,
-    //   default:"normal"
-    // }
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user'
+    }
   },
   {
     timestamps: true,

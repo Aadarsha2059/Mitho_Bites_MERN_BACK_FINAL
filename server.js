@@ -1,7 +1,7 @@
 require("dotenv").config()
 const app = require("./index")
 
-const PORT = process.env.PORT || 5051 // Changed default port to 5051
+const PORT = process.env.PORT || 5050 // Port 5050 for frontend compatibility
 let MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/mithobites";
 // Fallback for local dev if Docker hostname 'mongo' is not found
 if (MONGODB_URI.includes('mongo') && !process.env.USE_DOCKER_MONGO) {

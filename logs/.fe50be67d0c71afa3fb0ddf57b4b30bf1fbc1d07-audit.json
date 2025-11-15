@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 30
+    },
+    "auditLog": "C:\\Users\\User\\Documents\\Developer\\API\\MERN_MithoBites_FINAL\\Backend\\logs\\.fe50be67d0c71afa3fb0ddf57b4b30bf1fbc1d07-audit.json",
+    "files": [
+        {
+            "date": 1763217868916,
+            "name": "C:\\Users\\User\\Documents\\Developer\\API\\MERN_MithoBites_FINAL\\Backend\\logs\\rejections-2025-11-15.log",
+            "hash": "f682f85d80b56de231055cf0f4de821dbf3f1c3d37d4103f5832bdf505f410dd"
+        }
+    ],
+    "hashType": "sha256"
+}

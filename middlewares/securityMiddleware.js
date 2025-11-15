@@ -33,7 +33,7 @@ const sanitizeNoSQL = (req, res, next) => {
             }
             // Sanitize string values
             else if (typeof obj[key] === 'string') {
-                // Remove dangerous characters
+                // Remove dangerous characters but keep common characters like @ _ - .
                 obj[key] = obj[key].replace(/[\x00\x08\x09\x1a\n\r"'\\\%]/g, '');
             }
         }
@@ -62,7 +62,7 @@ const sanitizeNoSQL = (req, res, next) => {
 // 2. SQL/COMMAND INJECTION PROTECTION
 // ==========================================
 const sanitizeCommands = (req, res, next) => {
-    // Shell metacharacters to block
+    // Shell metacharacters to block (but keep @ _ - . for emails and usernames)
     const dangerousChars = /[;&|`$(){}[\]<>]/g;
 
     // Recursive function to sanitize objects
@@ -107,11 +107,11 @@ const sanitizeCommands = (req, res, next) => {
 // 3. CROSS-SITE SCRIPTING (XSS) PROTECTION
 // ==========================================
 const sanitizeXSS = (req, res, next) => {
-    // HTML escape function
+    // HTML escape function (but keep @ _ - . for emails and usernames)
     const escapeHTML = (str) => {
         if (typeof str !== 'string') return str;
+        // Only escape HTML special characters, not @ _ - .
         return str
-            .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')

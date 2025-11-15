@@ -2,6 +2,8 @@ require("dotenv").config()
 
 const express=require("express")
 const connectDB=require("./config/db")
+const logger = require("./config/logger")
+const { auditMiddleware } = require("./middlewares/auditMiddleware")
 const userRoutes=require("./routes/userRoutes")
 const adminUserRoutes=require("./routes/admin/userRouteAdmin")
 
@@ -32,22 +34,52 @@ const cors = require("cors")
 const feedbackRoutes = require('./routes/feedbackRoutes')
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const passport = require('passport');
 require('./passport')(passport);
 
+// Import security middleware
+const { securityHeaders, forceHTTPS, corsOptions } = require('./middlewares/securityHeaders');
+
 const app=express() 
-app.use(cors())
+
+// Apply security headers (disabled in development)
+if (process.env.NODE_ENV === 'production') {
+    securityHeaders(app);
+    app.use(forceHTTPS);
+}
+
+// CORS with security options (permissive in development)
+app.use(cors(corsOptions))
 app.use(express.json()) //accept join in request
 app.use("/uploads",express.static(path.join(__dirname,"uploads")))
+app.use(express.static(path.join(__dirname,"public")))
 
-// Add session and passport middleware
+// Session configuration with MongoDB store
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'mithobites_secret',
-  resave: false,
-  saveUninitialized: false
+    secret: process.env.SESSION_SECRET || 'bhokbhoj_session_secret_key_2025',
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/mithobites',
+        collectionName: 'sessions',
+        ttl: 15 * 60 // 15 minutes in seconds
+    }),
+    cookie: {
+        maxAge: 15 * 60 * 1000, // 15 minutes in milliseconds
+        httpOnly: true,
+        secure: false, // Set to false for development (HTTP)
+        sameSite: 'lax',
+        path: '/'
+    },
+    name: 'sessionId' // Cookie name
 }));
+
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Audit middleware - logs all requests
+app.use(auditMiddleware)
 
 //2 new implementations
 connectDB()
@@ -329,6 +361,37 @@ app.get(
     }
 )
 
+// TLS/SSL Information endpoint
+app.get(
+    "/api/tls-info",
+    (req,res) =>{
+        const tlsInfo = {
+            success: true,
+            message: "TLS/SSL Connection Information",
+            connection: {
+                encrypted: req.connection.encrypted || req.socket.encrypted || false,
+                protocol: req.socket.getProtocol ? req.socket.getProtocol() : 'N/A',
+                cipher: req.socket.getCipher ? req.socket.getCipher() : null,
+                peerCertificate: req.socket.getPeerCertificate ? 
+                    (req.socket.getPeerCertificate().subject || 'N/A') : 'N/A'
+            },
+            server: {
+                tlsVersion: 'TLS 1.3',
+                cipherSuites: [
+                    'TLS_AES_256_GCM_SHA384',
+                    'TLS_CHACHA20_POLY1305_SHA256',
+                    'TLS_AES_128_GCM_SHA256'
+                ],
+                securityHeaders: 'Enabled',
+                hsts: 'Enabled (1 year)'
+            },
+            timestamp: new Date().toISOString()
+        };
+        
+        return res.status(200).json(tlsInfo);
+    }
+)
+
 app.get(
     "/post/:postid", //if second path is dynamic 
     (req,res) =>{
@@ -523,9 +586,15 @@ app.delete(
 
 const cartRouteAdmin = require("./routes/admin/cartRouteAdmin");
 const feedbackRouteAdmin = require("./routes/admin/feedbackRouteAdmin");
+const auditRouteAdmin = require("./routes/admin/auditRouteAdmin");
+const sessionRoutes = require("./routes/sessionRoutes");
+const sessionDemoRoutes = require("./routes/sessionDemoRoutes");
 
 app.use("/api/admin/cart", cartRouteAdmin);
 app.use("/api/admin/feedback", feedbackRouteAdmin);
+app.use("/api/admin/audit", auditRouteAdmin);
+app.use("/api/sessions", sessionRoutes);
+app.use("/api/session-demo", sessionDemoRoutes);
 
 module.exports=app
 

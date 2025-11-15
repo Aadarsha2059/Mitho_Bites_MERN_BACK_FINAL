@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real Session Cookies - BHOKBHOJ</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial; background: #f5f7fa; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px; text-align: center; }
+        .section { background: white; padding: 30px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .info-box { background: #fef5e7; border-left: 4px solid #f39c12; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .success-box { background: #f0fff4; border-left: 4px solid #48bb78; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .code-box { background: #1e293b; color: #e2e8f0; padding: 20px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 0.9em; word-break: break-all; margin: 15px 0; }
+        button { background: #667eea; color: white; border: none; padding: 15px 30px; border-radius: 8px; cursor: pointer; margin: 10px 5px; font-weight: 600; font-size: 1em; }
+        button:hover { background: #5568d3; }
+        .btn-danger { background: #fc8181; }
+        .btn-danger:hover { background: #f56565; }
+        h2 { color: #333; margin-bottom: 15px; }
+        .step { background: #f8fafc; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #667eea; }
+        .step strong { color: #667eea; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍪 Real Session Cookies</h1>
+            <p>View Actual Session ID and Session Data from Backend</p>
+        </div>
+        
+        <div class="section">
+            <h2>📋 Instructions</h2>
+            <div class="step">
+                <strong>Step 1:</strong> Click "Create Real Session" button below
+            </div>
+            <div class="step">
+                <strong>Step 2:</strong> Press F12 to open DevTools
+            </div>
+            <div class="step">
+                <strong>Step 3:</strong> Go to "Application" tab
+            </div>
+            <div class="step">
+                <strong>Step 4:</strong> Click "Cookies" → "https://localhost:5443"
+            </div>
+            <div class="step">
+                <strong>Step 5:</strong> You will see <strong>"sessionId"</strong> cookie with real session data!
+            </div>
+        </div>
+        
+        <div class="section" style="text-align: center;">
+            <h2>🚀 Create Session</h2>
+            <button onclick="createSession()">🍪 Create Real Session</button>
+            <button onclick="viewSession()">👁️ View Session Data</button>
+            <button class="btn-danger" onclick="destroySession()">🗑️ Destroy Session</button>
+        </div>
+        
+        <div class="section">
+            <h2>📊 Session Response</h2>
+            <div id="response">
+                <p style="color: #999;">Click "Create Real Session" to see the response...</p>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>🔍 How to View in DevTools</h2>
+            <div class="info-box">
+                <h3 style="margin-bottom: 10px;">In Application Tab → Cookies:</h3>
+                <p><strong>You will see:</strong></p>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li><strong>Name:</strong> sessionId</li>
+                    <li><strong>Value:</strong> [Long encrypted session ID]</li>
+                    <li><strong>Domain:</strong> localhost</li>
+                    <li><strong>Path:</strong> /</li>
+                    <li><strong>Expires:</strong> [15 minutes from now]</li>
+                    <li><strong>HttpOnly:</strong> ✓ (Protected from JavaScript)</li>
+                    <li><strong>Secure:</strong> ✓ (HTTPS only)</li>
+                    <li><strong>SameSite:</strong> Strict</li>
+                </ul>
+            </div>
+            
+            <div class="success-box">
+                <h3 style="margin-bottom: 10px;">Session Data Stored in MongoDB:</h3>
+                <p>The session data is stored in MongoDB in the <strong>"sessions"</strong> collection.</p>
+                <p style="margin-top: 10px;">Contains:</p>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>userId</li>
+                    <li>username</li>
+                    <li>email</li>
+                    <li>role</li>
+                    <li>loginTime</li>
+                    <li>ipAddress</li>
+                    <li>userAgent</li>
+                    <li>cookie settings (expires, maxAge, etc.)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        async function createSession() {
+            try {
+                const response = await fetch('/api/session-demo/create-demo-session');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayResponse(data);
+                    alert('✅ Real session created!\n\n' +
+                          'Now:\n' +
+                          '1. Press F12\n' +
+                          '2. Go to Application tab\n' +
+                          '3. Click Cookies → https://localhost:5443\n' +
+                          '4. You will see "sessionId" cookie!');
+                } else {
+                    alert('❌ Failed to create session');
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+        
+        async function viewSession() {
+            try {
+                const response = await fetch('/api/session-demo/view-session');
+                const data = await response.json();
+                
+                displayResponse(data);
+                
+                if (!data.success) {
+                    alert('⚠️ No active session found.\nCreate one first!');
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+        
+        async function destroySession() {
+            if (!confirm('Are you sure you want to destroy the session?')) return;
+            
+            try {
+                const response = await fetch('/api/session-demo/destroy-session');
+                const data = await response.json();
+                
+                displayResponse(data);
+                
+                if (data.success) {
+                    alert('✅ Session destroyed!\n\nThe "sessionId" cookie has been removed.');
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+        
+        function displayResponse(data) {
+            const html = `
+                <div class="code-box">${JSON.stringify(data, null, 2)}</div>
+            `;
+            document.getElementById('response').innerHTML = html;
+        }
+    </script>
+</body>
+</html>

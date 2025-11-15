@@ -422,15 +422,25 @@ const generateOTP = () => {
 
 // Login User with 2FA (Step 1: Verify credentials and send OTP)
 exports.loginUser = async (req, res) => {
-  const { username, password } = req.body;
+  console.log('Login request body:', req.body);
+  // Accept both username and email fields
+  const { username, email, password } = req.body;
+  const loginIdentifier = username || email;
 
   // Validation
-  if (!username || !password) {
+  if (!loginIdentifier || !password) {
+    console.log('Missing fields - identifier:', loginIdentifier, 'password:', password ? 'provided' : 'missing');
     return res.status(400).json({ success: false, message: "Missing field" });
   }
 
   try {
-    const user = await User.findOne({ username: username });
+    // Find user by username or email
+    const user = await User.findOne({ 
+      $or: [
+        { username: loginIdentifier },
+        { email: loginIdentifier }
+      ]
+    });
     if (!user) {
       return res.status(403).json({ success: false, message: "User not found" });
     }
@@ -440,7 +450,34 @@ exports.loginUser = async (req, res) => {
       return res.status(403).json({ success: false, message: "Invalid credentials" });
     }
 
-    // Generate OTP
+    // For admin users, skip OTP and login directly
+    if (user.role === 'admin') {
+      const payload = {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role
+      };
+
+      const token = jwt.sign(payload, process.env.SECRET || 'your-secret-key', { expiresIn: "24h" });
+
+      return res.status(200).json({
+        success: true,
+        message: "Admin login successful",
+        token: token,
+        user: {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          fullname: user.fullname,
+          phone: user.phone
+        },
+        redirectTo: '/admin'
+      });
+    }
+
+    // For regular users, generate and send OTP
     const otp = generateOTP();
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
