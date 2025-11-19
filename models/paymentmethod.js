@@ -31,7 +31,8 @@ const paymentMethodSchema = new mongoose.Schema({
     },
     orderId: {
         type: String,
-        unique: true
+        unique: true,
+        sparse: true  // Allows multiple null values but ensures uniqueness for non-null values
     }
 }, {
     timestamps: true // This adds createdAt and updatedAt fields automatically

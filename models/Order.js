@@ -44,6 +44,21 @@ const orderSchema = new mongoose.Schema({
         required: true
     },
     items: [orderItemSchema],
+    subtotal: {
+        type: Number,
+        required: true,
+        default: 0
+    },
+    deliveryFee: {
+        type: Number,
+        required: true,
+        default: 0
+    },
+    tax: {
+        type: Number,
+        required: true,
+        default: 0
+    },
     totalAmount: {
         type: Number,
         required: true
@@ -86,14 +101,6 @@ const orderSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true
-});
-
-// Calculate total amount before saving
-orderSchema.pre('save', function(next) {
-    this.totalAmount = this.items.reduce((total, item) => {
-        return total + (item.price * item.quantity);
-    }, 0);
-    next();
 });
 
 module.exports = mongoose.model("Order", orderSchema);

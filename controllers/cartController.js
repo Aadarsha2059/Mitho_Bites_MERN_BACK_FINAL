@@ -23,21 +23,52 @@ exports.testAuth = async (req, res) => {
 // Get user's cart
 exports.getCart = async (req, res) => {
     try {
+        if (!req.user || !req.user._id) {
+            console.log("=== Get Cart - No User ===");
+            return res.status(200).json({
+                success: true,
+                message: "Cart is empty (no user)",
+                data: {
+                    items: [],
+                    totalAmount: 0
+                }
+            });
+        }
+        
         const userId = req.user._id;
+        console.log("=== Get Cart Started ===");
+        console.log("User ID:", userId);
 
         let cart = await Cart.findOne({ userId })
             .populate({
                 path: 'items.productId',
-                select: 'name price filepath isAvailable type',
+                select: 'name price filepath isAvailable type categoryId restaurantId',
                 populate: [
                     { path: 'categoryId', select: 'name' },
                     { path: 'restaurantId', select: 'name location' }
                 ]
             });
 
+        console.log("Cart found:", cart ? "Yes" : "No");
+        if (cart) {
+            console.log("Cart items count:", cart.items.length);
+            console.log("Cart items structure:", JSON.stringify(cart.items, null, 2));
+        }
+
         if (!cart) {
             cart = new Cart({ userId, items: [] });
             await cart.save();
+            console.log("Created new empty cart");
+        }
+
+        // Filter out items with null/undefined productId (deleted products)
+        if (cart.items && cart.items.length > 0) {
+            const validItems = cart.items.filter(item => item.productId != null);
+            if (validItems.length !== cart.items.length) {
+                console.log(`Filtered out ${cart.items.length - validItems.length} invalid items`);
+                cart.items = validItems;
+                await cart.save();
+            }
         }
 
         // Transform cart data with full image URLs
@@ -59,16 +90,22 @@ exports.getCart = async (req, res) => {
             });
         }
 
+        console.log("Transformed cart:", JSON.stringify(transformedCart, null, 2));
+        console.log("=== Get Cart Completed ===");
+
         return res.status(200).json({
             success: true,
             message: "Cart fetched successfully",
             data: transformedCart
         });
     } catch (err) {
-        console.error("Get Cart Error:", err);
+        console.error("=== Get Cart Error ===");
+        console.error("Error details:", err);
+        console.error("Error stack:", err.stack);
         return res.status(500).json({
             success: false,
-            message: "Server error"
+            message: "Server error",
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
         });
     }
 };
@@ -76,6 +113,18 @@ exports.getCart = async (req, res) => {
 // Add item to cart
 exports.addToCart = async (req, res) => {
     try {
+        console.log('=== Add to Cart Request ===');
+        console.log('Headers:', req.headers.authorization ? 'Token present' : 'No token');
+        console.log('User:', req.user ? req.user._id : 'No user');
+        
+        if (!req.user || !req.user._id) {
+            console.log('Authentication failed - no user found');
+            return res.status(401).json({
+                success: false,
+                message: "Please login to add items to cart. Make sure you're logged in and try refreshing the page."
+            });
+        }
+        
         const userId = req.user._id;
         const { productId, quantity = 1 } = req.body;
 
@@ -134,10 +183,10 @@ exports.addToCart = async (req, res) => {
         await cart.save();
         console.log('Cart saved successfully');
 
-        // Populate product details
+        // Populate product details with full nested population
         await cart.populate({
             path: 'items.productId',
-            select: 'name price filepath isAvailable type',
+            select: 'name price filepath isAvailable type categoryId restaurantId',
             populate: [
                 { path: 'categoryId', select: 'name' },
                 { path: 'restaurantId', select: 'name location' }
@@ -145,6 +194,7 @@ exports.addToCart = async (req, res) => {
         });
 
         console.log('Cart populated successfully');
+        console.log('Populated cart items:', JSON.stringify(cart.items, null, 2));
 
         // Transform cart data with full image URLs
         const baseUrl = `${req.protocol}://${req.get('host')}`;
@@ -186,6 +236,13 @@ exports.addToCart = async (req, res) => {
 // Update cart item quantity
 exports.updateCartItem = async (req, res) => {
     try {
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({
+                success: false,
+                message: "Please login to update cart"
+            });
+        }
+        
         const userId = req.user._id;
         const { productId, quantity } = req.body;
 
@@ -227,7 +284,7 @@ exports.updateCartItem = async (req, res) => {
 
         await cart.populate({
             path: 'items.productId',
-            select: 'name price filepath isAvailable type',
+            select: 'name price filepath isAvailable type categoryId restaurantId',
             populate: [
                 { path: 'categoryId', select: 'name' },
                 { path: 'restaurantId', select: 'name location' }
@@ -270,6 +327,13 @@ exports.updateCartItem = async (req, res) => {
 // Remove item from cart
 exports.removeFromCart = async (req, res) => {
     try {
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({
+                success: false,
+                message: "Please login to remove items from cart"
+            });
+        }
+        
         const userId = req.user._id;
         const { productId } = req.params;
 
@@ -289,7 +353,7 @@ exports.removeFromCart = async (req, res) => {
 
         await cart.populate({
             path: 'items.productId',
-            select: 'name price filepath isAvailable type',
+            select: 'name price filepath isAvailable type categoryId restaurantId',
             populate: [
                 { path: 'categoryId', select: 'name' },
                 { path: 'restaurantId', select: 'name location' }
@@ -332,6 +396,13 @@ exports.removeFromCart = async (req, res) => {
 // Clear cart
 exports.clearCart = async (req, res) => {
     try {
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({
+                success: false,
+                message: "Please login to clear cart"
+            });
+        }
+        
         const userId = req.user._id;
 
         const cart = await Cart.findOne({ userId });
@@ -361,6 +432,14 @@ exports.clearCart = async (req, res) => {
 
 exports.getUserCart = async (req, res) => {
     try {
+        if (!req.user || !req.user._id) {
+            return res.status(200).json({
+                success: true,
+                message: "Cart is empty (no user)",
+                data: []
+            });
+        }
+        
         const userId = req.user._id;
         
         const cartItems = await Cart.find({ userId })

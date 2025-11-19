@@ -49,8 +49,28 @@ if (process.env.NODE_ENV === 'production') {
     app.use(forceHTTPS);
 }
 
-// CORS with security options (permissive in development)
+// CORS with security options - NOW SECURE IN ALL ENVIRONMENTS
 app.use(cors(corsOptions))
+
+// CORS error handler - catches rejected origins
+app.use((err, req, res, next) => {
+    if (err.message && err.message.includes('CORS policy')) {
+        console.error('🚫 CORS Violation:', {
+            origin: req.headers.origin,
+            method: req.method,
+            path: req.path,
+            ip: req.ip,
+            timestamp: new Date().toISOString()
+        });
+        return res.status(403).json({
+            success: false,
+            message: 'Access denied: Origin not allowed',
+            error: 'CORS_POLICY_VIOLATION'
+        });
+    }
+    next(err);
+});
+
 app.use(express.json()) //accept join in request
 app.use("/uploads",express.static(path.join(__dirname,"uploads")))
 app.use(express.static(path.join(__dirname,"public")))

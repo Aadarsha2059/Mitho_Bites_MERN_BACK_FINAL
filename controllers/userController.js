@@ -388,11 +388,11 @@ exports.registerUser = async (req, res) => {
       return res.status(400).json({ success: false, message: "Username already exists" });
     }
 
-    // Check for existing user by email
-    const existingUserByEmail = await User.findOne({ email });
-    if (existingUserByEmail) {
-      return res.status(400).json({ success: false, message: "Email already exists" });
-    }
+    // ✅ TESTING MODE: Allow duplicate emails
+    // const existingUserByEmail = await User.findOne({ email });
+    // if (existingUserByEmail) {
+    //   return res.status(400).json({ success: false, message: "Email already exists" });
+    // }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -408,10 +408,20 @@ exports.registerUser = async (req, res) => {
     });
 
     await newUser.save();
+    console.log('User registered successfully:', newUser.username);
 
-    return res.status(201).json({ success: true, data: newUser });
+    return res.status(201).json({ 
+      success: true, 
+      message: "Registration successful! Please login.",
+      data: newUser 
+    });
   } catch (err) {
-    return res.status(500).json({ success: false, message: "Server error" });
+    console.error('Registration error:', err);
+    return res.status(500).json({ 
+      success: false, 
+      message: "Server error during registration",
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 };
 

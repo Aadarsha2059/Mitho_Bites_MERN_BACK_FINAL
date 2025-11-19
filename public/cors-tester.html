@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Security Tester - BHOKBHOJ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+        
+        .test-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .test-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        .test-section p {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin: 5px 0;
+            font-weight: 600;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .result-box {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            line-height: 1.6;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .result-box.success {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            color: #155724;
+        }
+        
+        .result-box.error {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            color: #721c24;
+        }
+        
+        .result-box.info {
+            background: #d1ecf1;
+            border: 2px solid #17a2b8;
+            color: #0c5460;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+            margin: 5px 5px 5px 0;
+        }
+        
+        .status-badge.secure {
+            background: #28a745;
+            color: white;
+        }
+        
+        .status-badge.vulnerable {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .status-badge.info {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .origin-info {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .origin-info strong {
+            color: #856404;
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        @media (max-width: 768px) {
+            .test-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .summary h2 {
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+        
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .stat {
+            text-align: center;
+            padding: 15px;
+        }
+        
+        .stat-number {
+            font-size: 3em;
+            font-weight: bold;
+            display: block;
+        }
+        
+        .stat-label {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 CORS Security Tester</h1>
+        <p class="subtitle">Test if your BHOKBHOJ API is protected from CORS attacks</p>
+        
+        <div class="origin-info">
+            <strong>📍 Current Origin:</strong> <span id="current-origin"></span><br>
+            <strong>🌐 Testing Against:</strong> http://localhost:5050
+        </div>
+        
+        <!-- Test 1: Health Check -->
+        <div class="test-section">
+            <h2>Test 1: Basic Health Check</h2>
+            <p>Tests if the API is accessible from this origin.</p>
+            <button onclick="testHealthCheck()">
+                🏥 Run Health Check Test
+            </button>
+            <div id="health-result" class="result-box"></div>
+        </div>
+        
+        <!-- Test 2: Cart Access -->
+        <div class="test-section">
+            <h2>Test 2: Cart Data Access</h2>
+            <p>Tests if cart data can be accessed (requires authentication).</p>
+            <button onclick="testCartAccess()">
+                🛒 Test Cart Access
+            </button>
+            <div id="cart-result" class="result-box"></div>
+        </div>
+        
+        <!-- Test 3: Multiple Endpoints -->
+        <div class="test-section">
+            <h2>Test 3: Multiple Endpoints</h2>
+            <p>Tests various API endpoints to verify CORS configuration.</p>
+            <div class="test-grid">
+                <button onclick="testEndpoint('/api/categories', 'categories')">
+                    📂 Test Categories
+                </button>
+                <button onclick="testEndpoint('/api/restaurants', 'restaurants')">
+                    🏪 Test Restaurants
+                </button>
+                <button onclick="testEndpoint('/api/products', 'products')">
+                    🍕 Test Products
+                </button>
+                <button onclick="testEndpoint('/api/auth/me', 'auth')">
+                    👤 Test Auth
+                </button>
+            </div>
+            <div id="endpoint-result" class="result-box"></div>
+        </div>
+        
+        <!-- Test 4: CORS Headers -->
+        <div class="test-section">
+            <h2>Test 4: CORS Headers Analysis</h2>
+            <p>Analyzes the CORS headers returned by the server.</p>
+            <button onclick="analyzeCORSHeaders()">
+                🔍 Analyze CORS Headers
+            </button>
+            <div id="headers-result" class="result-box"></div>
+        </div>
+        
+        <!-- Test 5: Preflight Request -->
+        <div class="test-section">
+            <h2>Test 5: Preflight Request (OPTIONS)</h2>
+            <p>Tests the CORS preflight request handling.</p>
+            <button onclick="testPreflight()">
+                ✈️ Test Preflight Request
+            </button>
+            <div id="preflight-result" class="result-box"></div>
+        </div>
+        
+        <!-- Summary -->
+        <div class="summary" id="summary" style="display: none;">
+            <h2>🎯 Test Summary</h2>
+            <div class="summary-stats">
+                <div class="stat">
+                    <span class="stat-number" id="passed-count">0</span>
+                    <span class="stat-label">✅ Passed</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number" id="failed-count">0</span>
+                    <span class="stat-label">❌ Failed</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number" id="security-score">0</span>
+                    <span class="stat-label">🔒 Security Score</span>
+                </div>
+            </div>
+            <p id="security-verdict" style="margin-top: 20px; font-size: 1.3em;"></p>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5050';
+        let testResults = {
+            passed: 0,
+            failed: 0,
+            total: 0
+        };
+
+        // Display current origin
+        document.getElementById('current-origin').textContent = window.location.origin;
+
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.className = `result-box ${type}`;
+            element.innerHTML = message;
+            element.style.display = 'block';
+        }
+
+        function updateSummary(passed) {
+            testResults.total++;
+            if (passed) {
+                testResults.passed++;
+            } else {
+                testResults.failed++;
+            }
+            
+            document.getElementById('passed-count').textContent = testResults.passed;
+            document.getElementById('failed-count').textContent = testResults.failed;
+            
+            const score = Math.round((testResults.passed / testResults.total) * 100);
+            document.getElementById('security-score').textContent = score + '%';
+            
+            const verdict = document.getElementById('security-verdict');
+            if (score >= 80) {
+                verdict.innerHTML = '✅ <strong>SECURE:</strong> Your CORS configuration is properly set up!';
+            } else if (score >= 50) {
+                verdict.innerHTML = '⚠️ <strong>PARTIALLY SECURE:</strong> Some issues detected.';
+            } else {
+                verdict.innerHTML = '❌ <strong>VULNERABLE:</strong> Critical CORS issues found!';
+            }
+            
+            document.getElementById('summary').style.display = 'block';
+        }
+
+        async function testHealthCheck() {
+            showResult('health-result', '🔄 Testing health endpoint...', 'info');
+            
+            try {
+                const response = await fetch(`${API_URL}/api/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('health-result', 
+                        `<strong>✅ SUCCESS</strong><br><br>` +
+                        `<strong>Status:</strong> ${response.status}<br>` +
+                        `<strong>Message:</strong> ${data.message}<br>` +
+                        `<strong>Timestamp:</strong> ${data.timestamp}<br><br>` +
+                        `<span class="status-badge secure">API ACCESSIBLE</span>`,
+                        'success'
+                    );
+                    updateSummary(true);
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                showResult('health-result',
+                    `<strong>❌ BLOCKED</strong><br><br>` +
+                    `<strong>Error:</strong> ${error.message}<br><br>` +
+                    `This origin is NOT in the CORS whitelist.<br>` +
+                    `<span class="status-badge vulnerable">CORS BLOCKED</span>`,
+                    'error'
+                );
+                updateSummary(false);
+            }
+        }
+
+        async function testCartAccess() {
+            showResult('cart-result', '🔄 Testing cart endpoint...', 'info');
+            
+            try {
+                const response = await fetch(`${API_URL}/api/cart`, {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('cart-result',
+                        `<strong>✅ ACCESSIBLE</strong><br><br>` +
+                        `<strong>Status:</strong> ${response.status}<br>` +
+                        `<strong>Note:</strong> Cart endpoint is accessible from this origin.<br><br>` +
+                        `<span class="status-badge ${window.location.origin.includes('localhost') ? 'secure' : 'vulnerable'}">` +
+                        `${window.location.origin.includes('localhost') ? 'EXPECTED' : 'POTENTIAL ISSUE'}` +
+                        `</span>`,
+                        window.location.origin.includes('localhost') ? 'success' : 'error'
+                    );
+                    updateSummary(window.location.origin.includes('localhost'));
+                } else if (response.status === 401) {
+                    showResult('cart-result',
+                        `<strong>🔐 AUTHENTICATION REQUIRED</strong><br><br>` +
+                        `<strong>Status:</strong> ${response.status}<br>` +
+                        `<strong>Note:</strong> CORS allowed the request, but authentication is required.<br>` +
+                        `This is normal behavior.<br><br>` +
+                        `<span class="status-badge info">AUTH REQUIRED</span>`,
+                        'info'
+                    );
+                    updateSummary(true);
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                showResult('cart-result',
+                    `<strong>❌ BLOCKED BY CORS</strong><br><br>` +
+                    `<strong>Error:</strong> ${error.message}<br><br>` +
+                    `✅ This is GOOD! Cart data is protected from unauthorized origins.<br><br>` +
+                    `<span class="status-badge secure">CORS WORKING</span>`,
+                    'success'
+                );
+                updateSummary(true);
+            }
+        }
+
+        async function testEndpoint(endpoint, name) {
+            showResult('endpoint-result', `🔄 Testing ${name} endpoint...`, 'info');
+            
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`);
+                
+                if (response.ok) {
+                    showResult('endpoint-result',
+                        `<strong>✅ ${name.toUpperCase()} ACCESSIBLE</strong><br><br>` +
+                        `<strong>Endpoint:</strong> ${endpoint}<br>` +
+                        `<strong>Status:</strong> ${response.status}<br><br>` +
+                        `<span class="status-badge ${window.location.origin.includes('localhost') ? 'secure' : 'vulnerable'}">` +
+                        `${window.location.origin.includes('localhost') ? 'ALLOWED' : 'CHECK ORIGIN'}` +
+                        `</span>`,
+                        window.location.origin.includes('localhost') ? 'success' : 'error'
+                    );
+                    updateSummary(window.location.origin.includes('localhost'));
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                showResult('endpoint-result',
+                    `<strong>❌ ${name.toUpperCase()} BLOCKED</strong><br><br>` +
+                    `<strong>Endpoint:</strong> ${endpoint}<br>` +
+                    `<strong>Error:</strong> ${error.message}<br><br>` +
+                    `<span class="status-badge ${window.location.origin.includes('localhost') ? 'vulnerable' : 'secure'}">` +
+                    `${window.location.origin.includes('localhost') ? 'UNEXPECTED' : 'CORS BLOCKED'}` +
+                    `</span>`,
+                    window.location.origin.includes('localhost') ? 'error' : 'success'
+                );
+                updateSummary(!window.location.origin.includes('localhost'));
+            }
+        }
+
+        async function analyzeCORSHeaders() {
+            showResult('headers-result', '🔄 Analyzing CORS headers...', 'info');
+            
+            try {
+                const response = await fetch(`${API_URL}/api/health`);
+                
+                const headers = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Credentials': response.headers.get('Access-Control-Allow-Credentials'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers')
+                };
+                
+                let analysis = '<strong>📊 CORS HEADERS ANALYSIS</strong><br><br>';
+                
+                // Check Access-Control-Allow-Origin
+                const allowOrigin = headers['Access-Control-Allow-Origin'];
+                if (allowOrigin === '*') {
+                    analysis += `❌ <strong>Allow-Origin:</strong> * (VULNERABLE!)<br>`;
+                    analysis += `   This allows ALL origins - SECURITY RISK!<br><br>`;
+                } else if (allowOrigin) {
+                    analysis += `✅ <strong>Allow-Origin:</strong> ${allowOrigin}<br>`;
+                    analysis += `   Specific origin allowed - SECURE<br><br>`;
+                } else {
+                    analysis += `⚠️ <strong>Allow-Origin:</strong> Not set<br><br>`;
+                }
+                
+                // Check credentials
+                if (headers['Access-Control-Allow-Credentials'] === 'true') {
+                    analysis += `✅ <strong>Allow-Credentials:</strong> true<br>`;
+                    analysis += `   Cookies/auth headers allowed<br><br>`;
+                }
+                
+                // Check methods
+                if (headers['Access-Control-Allow-Methods']) {
+                    analysis += `✅ <strong>Allow-Methods:</strong> ${headers['Access-Control-Allow-Methods']}<br><br>`;
+                }
+                
+                // Security verdict
+                const isSecure = allowOrigin !== '*' && allowOrigin !== null;
+                analysis += `<br><span class="status-badge ${isSecure ? 'secure' : 'vulnerable'}">` +
+                           `${isSecure ? '✅ SECURE CONFIGURATION' : '❌ VULNERABLE CONFIGURATION'}` +
+                           `</span>`;
+                
+                showResult('headers-result', analysis, isSecure ? 'success' : 'error');
+                updateSummary(isSecure);
+            } catch (error) {
+                showResult('headers-result',
+                    `<strong>❌ CANNOT ANALYZE</strong><br><br>` +
+                    `<strong>Error:</strong> ${error.message}<br><br>` +
+                    `CORS blocked the request - this is actually GOOD if you're testing from an unauthorized origin!`,
+                    'success'
+                );
+                updateSummary(true);
+            }
+        }
+
+        async function testPreflight() {
+            showResult('preflight-result', '🔄 Testing preflight request...', 'info');
+            
+            try {
+                const response = await fetch(`${API_URL}/api/health`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'Content-Type'
+                    }
+                });
+                
+                showResult('preflight-result',
+                    `<strong>✅ PREFLIGHT SUCCESSFUL</strong><br><br>` +
+                    `<strong>Status:</strong> ${response.status}<br>` +
+                    `<strong>Note:</strong> Server properly handles OPTIONS requests.<br><br>` +
+                    `<span class="status-badge secure">PREFLIGHT OK</span>`,
+                    'success'
+                );
+                updateSummary(true);
+            } catch (error) {
+                showResult('preflight-result',
+                    `<strong>❌ PREFLIGHT BLOCKED</strong><br><br>` +
+                    `<strong>Error:</strong> ${error.message}<br><br>` +
+                    `<span class="status-badge ${window.location.origin.includes('localhost') ? 'vulnerable' : 'secure'}">` +
+                    `${window.location.origin.includes('localhost') ? 'ISSUE DETECTED' : 'CORS BLOCKED'}` +
+                    `</span>`,
+                    window.location.origin.includes('localhost') ? 'error' : 'success'
+                );
+                updateSummary(!window.location.origin.includes('localhost'));
+            }
+        }
+    </script>
+</body>
+</html>

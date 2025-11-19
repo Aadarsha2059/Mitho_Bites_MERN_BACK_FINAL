@@ -84,35 +84,54 @@ const forceHTTPS = (req, res, next) => {
 
 /**
  * CORS configuration for secure communication
+ * ✅ SECURE: Whitelist-based approach for all environments
  */
 const corsOptions = {
     origin: function (origin, callback) {
-        // In development, allow all origins
-        if (process.env.NODE_ENV !== 'production') {
-            callback(null, true);
-            return;
-        }
-
+        // Define allowed origins for all environments
         const allowedOrigins = [
+            // Development origins
             'http://localhost:5173',
             'http://localhost:3000',
-            'https://localhost:5173',
-            'https://localhost:3000',
+            'http://127.0.0.1:5173',
+            'http://127.0.0.1:3000',
+            // Production origins from environment variables
             process.env.FRONTEND_URL,
-            process.env.CLIENT_URL
-        ].filter(Boolean);
+            process.env.CLIENT_URL,
+            process.env.PRODUCTION_FRONTEND_URL
+        ].filter(Boolean); // Remove undefined values
 
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        // Log for debugging (remove in production)
+        if (process.env.NODE_ENV !== 'production') {
+            console.log('🔍 CORS Check - Origin:', origin, '| Allowed:', allowedOrigins);
+        }
+
+        // Allow requests with no origin (mobile apps, Postman, curl)
+        if (!origin) {
+            return callback(null, true);
+        }
+
+        // Check if origin is in whitelist
+        if (allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
-            callback(null, true); // Allow in development
+            // ✅ SECURE: Reject unauthorized origins
+            const error = new Error(`CORS policy: Origin ${origin} is not allowed`);
+            error.status = 403;
+            callback(error);
         }
     },
-    credentials: true,
+    credentials: true, // Allow cookies and authorization headers
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: [
+        'Content-Type', 
+        'Authorization', 
+        'X-Requested-With',
+        'X-CSRF-Token' // For CSRF protection
+    ],
     exposedHeaders: ['Content-Range', 'X-Content-Range'],
-    maxAge: 86400 // 24 hours
+    maxAge: 86400, // 24 hours - cache preflight requests
+    optionsSuccessStatus: 200 // For legacy browser support
 };
 
 module.exports = {

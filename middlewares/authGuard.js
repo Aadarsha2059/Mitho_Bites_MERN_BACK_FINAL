@@ -21,8 +21,11 @@ const authGuard = async (req, res, next) => {
         // Verify token
         const decoded = jwt.verify(token, process.env.SECRET || 'your-secret-key-here');
         
+        // Try both _id and id for compatibility
+        const userId = decoded._id || decoded.id;
+        
         // Get user from database
-        const user = await User.findById(decoded.id).select('-password');
+        const user = await User.findById(userId).select('-password');
         
         if (!user) {
             return res.status(401).json({
@@ -84,12 +87,21 @@ const optionalAuthGuard = async (req, res, next) => {
         
         if (token) {
             const decoded = jwt.verify(token, process.env.SECRET || 'your-secret-key-here');
-            const user = await User.findById(decoded.id).select('-password');
+            console.log('Decoded token:', decoded);
+            
+            // Try both _id and id for compatibility
+            const userId = decoded._id || decoded.id;
+            console.log('Looking for user with ID:', userId);
+            
+            const user = await User.findById(userId).select('-password');
+            console.log('User found:', user ? user.username : 'No user');
+            
             if (user) {
                 req.user = user;
             }
         }
     } catch (error) {
+        console.error('Optional auth error:', error.message);
         // Silently fail - user remains unauthenticated
     }
     

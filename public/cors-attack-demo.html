@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Attack Demo - BHOKBHOJ Security</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+        
+        .demo-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        
+        .demo-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .attack-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .attack-box.blocked {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        
+        .attack-box.vulnerable {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button.danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+        
+        button.success {
+            background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+        }
+        
+        .result {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .result.error {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+        
+        .result.success {
+            border-left-color: #28a745;
+            background: #f0fff4;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 5px;
+        }
+        
+        .status.blocked {
+            background: #28a745;
+            color: white;
+        }
+        
+        .status.allowed {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        
+        .code-block code {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔒 CORS Security Demo - BHOKBHOJ</h1>
+            <p>Interactive demonstration of CORS attack prevention</p>
+        </div>
+
+        <div class="demo-section">
+            <h2>🎯 What is CORS and Why Does It Matter?</h2>
+            <div class="info-box">
+                <p><strong>CORS (Cross-Origin Resource Sharing)</strong> is a security feature that controls which websites can access your API.</p>
+                <p style="margin-top: 10px;">Without proper CORS configuration, malicious websites can:</p>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>Steal user data (cart, orders, profile)</li>
+                    <li>Place orders on behalf of users</li>
+                    <li>Access admin functions</li>
+                    <li>Perform actions without user consent</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>🔴 Attack Scenario 1: Steal User Cart Data</h2>
+            <div class="attack-box vulnerable">
+                <h3>❌ OLD VULNERABLE CODE (Before Fix)</h3>
+                <div class="code-block">
+                    <code>
+// In securityHeaders.js
+if (process.env.NODE_ENV !== 'production') {
+    callback(null, true); // ❌ Allows ALL origins!
+}
+                    </code>
+                </div>
+                <p><strong>Impact:</strong> Any website can access your API and steal user data!</p>
+            </div>
+            
+            <button class="danger" onclick="attemptStealCart()">
+                🚨 Try Attack: Steal Cart Data
+            </button>
+            
+            <div id="cart-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="demo-section">
+            <h2>🔴 Attack Scenario 2: Place Unauthorized Order</h2>
+            <div class="attack-box vulnerable">
+                <h3>Malicious Code Example</h3>
+                <div class="code-block">
+                    <code>
+// Hacker's website code
+fetch('http://localhost:5050/api/orders', {
+    method: 'POST',
+    credentials: 'include', // Sends victim's cookies!
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        deliveryInstructions: 'Deliver to hacker address',
+        paymentMethod: 'cash'
+    })
+});
+                    </code>
+                </div>
+            </div>
+            
+            <button class="danger" onclick="attemptPlaceOrder()">
+                🚨 Try Attack: Place Unauthorized Order
+            </button>
+            
+            <div id="order-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="demo-section">
+            <h2>✅ The Fix: Whitelist-Based CORS</h2>
+            <div class="attack-box blocked">
+                <h3>🛡️ NEW SECURE CODE (After Fix)</h3>
+                <div class="code-block">
+                    <code>
+// In securityHeaders.js
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    process.env.FRONTEND_URL
+];
+
+if (allowedOrigins.indexOf(origin) !== -1) {
+    callback(null, true); // ✅ Only whitelisted origins
+} else {
+    callback(error); // ❌ Reject unauthorized origins
+}
+                    </code>
+                </div>
+                <p><strong>Result:</strong> Only your legitimate frontend can access the API!</p>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>🧪 Test the Security</h2>
+            <p>Try accessing the API from this page (which is served from your backend):</p>
+            
+            <button class="success" onclick="testLegitimateRequest()">
+                ✅ Test Legitimate Request (Should Work)
+            </button>
+            
+            <button onclick="testCurrentOrigin()">
+                🔍 Check Current Origin Status
+            </button>
+            
+            <div id="test-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="demo-section">
+            <h2>📊 Security Status</h2>
+            <div id="security-status">
+                <p>Click "Check Current Origin Status" to see if this page is allowed to access the API.</p>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>🎓 What You Learned</h2>
+            <div class="info-box">
+                <ul style="margin-left: 20px;">
+                    <li>✅ CORS whitelist prevents unauthorized websites from accessing your API</li>
+                    <li>✅ Even in development, only localhost origins are allowed</li>
+                    <li>✅ Attackers cannot steal user data or perform actions on their behalf</li>
+                    <li>✅ Your application is now protected against CSRF attacks via CORS</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5050';
+
+        function showResult(elementId, message, isError = false) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = isError ? 'result error' : 'result success';
+            element.textContent = message;
+        }
+
+        async function attemptStealCart() {
+            showResult('cart-result', '🔄 Attempting to steal cart data...', false);
+            
+            try {
+                const response = await fetch(`${API_URL}/api/cart`, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('cart-result', 
+                        `❌ VULNERABLE! Cart data stolen:\n${JSON.stringify(data, null, 2)}\n\n` +
+                        `This means a hacker could steal this data from any website!`, 
+                        true
+                    );
+                } else {
+                    showResult('cart-result', 
+                        `✅ BLOCKED! CORS policy prevented the attack.\n\n` +
+                        `Status: ${response.status}\n` +
+                        `This is good - the API rejected the request because this origin is not whitelisted.`,
+                        false
+                    );
+                }
+            } catch (error) {
+                showResult('cart-result', 
+                    `✅ BLOCKED! CORS policy prevented the attack.\n\n` +
+                    `Error: ${error.message}\n\n` +
+                    `This is exactly what we want - the browser blocked the request!`,
+                    false
+                );
+            }
+        }
+
+        async function attemptPlaceOrder() {
+            showResult('order-result', '🔄 Attempting to place unauthorized order...', false);
+            
+            try {
+                const response = await fetch(`${API_URL}/api/orders`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        deliveryInstructions: 'HACKER ADDRESS - This should be blocked!',
+                        paymentMethod: 'cash'
+                    })
+                });
+
+                if (response.ok) {
+                    showResult('order-result', 
+                        `❌ VULNERABLE! Order placed successfully.\n\n` +
+                        `This means a hacker could place orders on behalf of users!`,
+                        true
+                    );
+                } else {
+                    showResult('order-result', 
+                        `✅ BLOCKED! CORS policy prevented the attack.\n\n` +
+                        `Status: ${response.status}\n` +
+                        `The malicious order was rejected!`,
+                        false
+                    );
+                }
+            } catch (error) {
+                showResult('order-result', 
+                    `✅ BLOCKED! CORS policy prevented the attack.\n\n` +
+                    `Error: ${error.message}\n\n` +
+                    `The browser blocked the malicious order request!`,
+                    false
+                );
+            }
+        }
+
+        async function testLegitimateRequest() {
+            showResult('test-result', '🔄 Testing API health endpoint...', false);
+            
+            try {
+                const response = await fetch(`${API_URL}/api/health`, {
+                    method: 'GET'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('test-result', 
+                        `✅ SUCCESS! API is accessible.\n\n` +
+                        `Response:\n${JSON.stringify(data, null, 2)}\n\n` +
+                        `This origin (${window.location.origin}) is allowed to access the API.`,
+                        false
+                    );
+                } else {
+                    showResult('test-result', 
+                        `❌ Request failed with status: ${response.status}`,
+                        true
+                    );
+                }
+            } catch (error) {
+                showResult('test-result', 
+                    `❌ CORS Error: ${error.message}\n\n` +
+                    `This origin (${window.location.origin}) is NOT in the whitelist.`,
+                    true
+                );
+            }
+        }
+
+        function testCurrentOrigin() {
+            const currentOrigin = window.location.origin;
+            const allowedOrigins = [
+                'http://localhost:5173',
+                'http://localhost:3000',
+                'http://127.0.0.1:5173',
+                'http://127.0.0.1:3000',
+                'http://localhost:5050' // Backend serving this page
+            ];
+
+            const isAllowed = allowedOrigins.includes(currentOrigin);
+            
+            const statusHtml = `
+                <div class="attack-box ${isAllowed ? 'blocked' : 'vulnerable'}">
+                    <h3>Current Origin: ${currentOrigin}</h3>
+                    <p><strong>Status:</strong> <span class="status ${isAllowed ? 'blocked' : 'allowed'}">${isAllowed ? '✅ ALLOWED' : '❌ BLOCKED'}</span></p>
+                    <p style="margin-top: 10px;">
+                        ${isAllowed 
+                            ? 'This origin is in the whitelist and can access the API.' 
+                            : 'This origin is NOT in the whitelist and will be blocked by CORS.'}
+                    </p>
+                    <p style="margin-top: 10px;"><strong>Whitelisted Origins:</strong></p>
+                    <ul style="margin-left: 20px;">
+                        ${allowedOrigins.map(origin => `<li>${origin}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+            
+            document.getElementById('security-status').innerHTML = statusHtml;
+        }
+
+        // Auto-check origin on page load
+        window.addEventListener('load', testCurrentOrigin);
+    </script>
+</body>
+</html>

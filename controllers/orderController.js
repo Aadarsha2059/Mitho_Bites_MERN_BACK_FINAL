@@ -153,7 +153,8 @@ exports.createOrder = async (req, res) => {
             food: order.items.map(i => i.productName).join(", "),
             quantity: order.items.reduce((sum, i) => sum + i.quantity, 0),
             totalprice: order.totalAmount,
-            paymentmode: paymentmodeValue
+            paymentmode: paymentmodeValue,
+            orderId: order._id.toString()
         });
         await payment.save();
 
@@ -177,17 +178,11 @@ exports.createOrder = async (req, res) => {
                     pass: process.env.EMAIL_PASS
                 }
             });
-            const orderItemsHtml = orderItems.map(item => `
-                <tr>
-                    <td style='padding:8px;border:1px solid #eee;'>${item.productName}</td>
-                    <td style='padding:8px;border:1px solid #eee;'>${item.quantity}</td>
-                    <td style='padding:8px;border:1px solid #eee;'>${item.price}</td>
-                    <td style='padding:8px;border:1px solid #eee;'>${item.restaurantName}</td>
-                </tr>
-            `).join("");
             // Format currency helper
             const formatNPR = (amount) => `NPR ${Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-            // Order confirmation email (same style as bill)
+            // Build base URL for images
+            const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+            // Order confirmation email with product images
             const orderConfirmationHtml = `
                 <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:650px;margin:32px auto;background:#fff;border-radius:18px;box-shadow:0 6px 32px rgba(20,184,166,0.2),0 2px 12px rgba(13,148,136,0.15);overflow:hidden;">
                     <div style="background:linear-gradient(90deg,#14b8a6 0%,#0d9488 60%,#FFA500 100%);color:#fff;padding:32px 40px 18px 40px;text-align:center;">
@@ -201,6 +196,7 @@ exports.createOrder = async (req, res) => {
                         <table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:1.08em;box-shadow:0 2px 8px #5a3fd71a;">
                             <thead>
                                 <tr style="background:linear-gradient(90deg,#5a3fd7 0%,#7c5dfa 100%);color:#fff;">
+                                    <th style='padding:10px 12px;border:1px solid #e9eaf3;'>Image</th>
                                     <th style='padding:10px 12px;border:1px solid #e9eaf3;'>Product</th>
                                     <th style='padding:10px 12px;border:1px solid #e9eaf3;'>Qty</th>
                                     <th style='padding:10px 12px;border:1px solid #e9eaf3;'>Price</th>
@@ -208,14 +204,19 @@ exports.createOrder = async (req, res) => {
                                 </tr>
                             </thead>
                             <tbody>
-                                ${order.items.map(item => `
+                                ${order.items.map(item => {
+                                    const productImage = item.productId?.filepath ? `${baseUrl}/uploads/${item.productId.filepath.replace(/^uploads\//, '')}` : '';
+                                    return `
                                     <tr style="background:#f4f6fb;">
+                                        <td style="padding:10px 12px;border:1px solid #e9eaf3;text-align:center;">
+                                            ${productImage ? `<img src="${productImage}" alt="${item.productName}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;"/>` : '<span style="color:#999;">No image</span>'}
+                                        </td>
                                         <td style="padding:10px 12px;border:1px solid #e9eaf3;">${item.productName || item.productId?.name}</td>
                                         <td style="padding:10px 12px;border:1px solid #e9eaf3;text-align:center;">${item.quantity}</td>
                                         <td style="padding:10px 12px;border:1px solid #e9eaf3;text-align:right;">${formatNPR(item.price)}</td>
                                         <td style="padding:10px 12px;border:1px solid #e9eaf3;">${item.restaurantName || item.productId?.restaurantId?.name || ''}</td>
                                     </tr>
-                                `).join("")}
+                                `}).join("")}
                             </tbody>
                         </table>
                         <div style="display:flex;justify-content:flex-end;margin-top:22px;">
@@ -273,10 +274,12 @@ exports.createOrder = async (req, res) => {
     } catch (err) {
         console.error("=== Create Order Error ===");
         console.error("Error details:", err);
+        console.error("Error message:", err.message);
         console.error("Error stack:", err.stack);
         return res.status(500).json({
             success: false,
-            message: "Server error"
+            message: "Failed to create order",
+            error: process.env.NODE_ENV === 'development' ? err.message : "Server error"
         });
     }
 };
@@ -539,15 +542,8 @@ exports.markOrderReceived = async (req, res) => {
             });
             // Format currency helper
             const formatNPR = (amount) => `NPR ${Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-            const orderItemsHtml = order.items.map((item, idx) => `
-                <tr>
-                    <td style='padding:8px 12px;border:1px solid #ddd;text-align:center;'>${idx + 1}</td>
-                    <td style='padding:8px 12px;border:1px solid #ddd;'>${item.productName || item.productId.name}</td>
-                    <td style='padding:8px 12px;border:1px solid #ddd;text-align:center;'>${item.quantity}</td>
-                    <td style='padding:8px 12px;border:1px solid #ddd;text-align:right;'>${formatNPR(item.price)}</td>
-                    <td style='padding:8px 12px;border:1px solid #ddd;'>${item.restaurantName || (item.productId.restaurantId?.name || '')}</td>
-                </tr>
-            `).join("");
+            // Build base URL for images
+            const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
             const restaurantName = order.items[0]?.restaurantName || order.items[0]?.productId?.restaurantId?.name || 'Unknown';
             const orderDate = order.orderDate ? new Date(order.orderDate) : new Date();
             const billHtml = `
@@ -569,6 +565,7 @@ exports.markOrderReceived = async (req, res) => {
                             <thead>
                                 <tr style="background:linear-gradient(90deg,#14b8a6 0%,#0d9488 100%);color:#fff;">
                                     <th style='padding:10px 12px;border:1px solid #e9eaf3;'>#</th>
+                                    <th style='padding:10px 12px;border:1px solid #e9eaf3;'>Image</th>
                                     <th style='padding:10px 12px;border:1px solid #e9eaf3;'>Product</th>
                                     <th style='padding:10px 12px;border:1px solid #e9eaf3;'>Qty</th>
                                     <th style='padding:10px 12px;border:1px solid #e9eaf3;'>Price</th>
@@ -576,15 +573,20 @@ exports.markOrderReceived = async (req, res) => {
                                 </tr>
                             </thead>
                             <tbody>
-                                ${order.items.map((item, idx) => `
+                                ${order.items.map((item, idx) => {
+                                    const productImage = item.productId?.filepath ? `${baseUrl}/uploads/${item.productId.filepath.replace(/^uploads\//, '')}` : '';
+                                    return `
                                     <tr style="background:${idx%2===0?'#f4f6fb':'#fff'};">
                                         <td style="padding:10px 12px;border:1px solid #e9eaf3;text-align:center;">${idx + 1}</td>
+                                        <td style="padding:10px 12px;border:1px solid #e9eaf3;text-align:center;">
+                                            ${productImage ? `<img src="${productImage}" alt="${item.productName}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;"/>` : '<span style="color:#999;">No image</span>'}
+                                        </td>
                                         <td style="padding:10px 12px;border:1px solid #e9eaf3;">${item.productName || item.productId?.name}</td>
                                         <td style="padding:10px 12px;border:1px solid #e9eaf3;text-align:center;">${item.quantity}</td>
                                         <td style="padding:10px 12px;border:1px solid #e9eaf3;text-align:right;">${formatNPR(item.price)}</td>
                                         <td style="padding:10px 12px;border:1px solid #e9eaf3;">${item.restaurantName || item.productId?.restaurantId?.name || ''}</td>
                                     </tr>
-                                `).join("")}
+                                `}).join("")}
                             </tbody>
                         </table>
                         <div style="display:flex;justify-content:flex-end;margin-top:22px;">
